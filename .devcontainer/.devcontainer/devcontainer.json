@@ -12,6 +12,7 @@
             "port": 5432,
             "password": "secret",
             "username": "myuser",
+			"database": "controlf",
             "postCreateCommand": "createdb -U postgres controlf"	
 		}
 	}
