@@ -12,7 +12,7 @@
             "port": 5432,
             "password": "secret",
             "username": "myuser",
-			"database": "controlf",
+			"database": "controlf"
 		}
 	}
 
