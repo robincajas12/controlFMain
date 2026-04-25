@@ -13,7 +13,6 @@
             "password": "secret",
             "username": "myuser",
 			"database": "controlf",
-            "postCreateCommand": "createdb -U postgres controlf"	
 		}
 	}
 
