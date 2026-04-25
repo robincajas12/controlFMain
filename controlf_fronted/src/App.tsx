@@ -1,9 +1,13 @@
-import { Routes, Route, Link, useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react';
+import { Routes, Route, Link, useParams } from 'react-router-dom'
 
 function Home() {
+  const [dataU, ] = useState(async ()=>await fetch('http://127.0.0.1:8080/saludo?nombre=Robinson')
+  .then(t => t.json()))
+
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', lineHeight: '1.6' }}>
-      <h1>React Router Tutorial</h1>
+      <h1>React Router Tutorial {dataU}</h1>
       <p>Welcome! This is a minimal setup to help you understand how routing works in React.</p>
 
       <section>
