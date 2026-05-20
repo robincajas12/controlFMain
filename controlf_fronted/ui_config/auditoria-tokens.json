@@ -1,0 +1,221 @@
+{
+  "$schema": "https://design-tokens.org/schema.json",
+  "meta": {
+    "name": "Auditoría C. Design System",
+    "version": "1.0",
+    "mode": "dark",
+    "description": "Tokens de diseño para generación de interfaces con UX Pilot / IA"
+  },
+
+  "color": {
+    "background": {
+      "base":          { "value": "#0D0F14",         "comment": "Fondo raíz de la app" },
+      "sidebar":       { "value": "#111318",         "comment": "Panel lateral de navegación" },
+      "card":          { "value": "#181B22",         "comment": "Tarjetas principales" },
+      "cardElevated":  { "value": "#1E2230",         "comment": "Tarjetas hover / elevadas" },
+      "input":         { "value": "#13151C",         "comment": "Inputs y text areas" },
+      "overlay":       { "value": "rgba(0,0,0,0.55)","comment": "Modales y overlays" },
+      "activeNav":     { "value": "#1A2035",         "comment": "Ítem activo del sidebar" },
+      "tag":           { "value": "#1C2033",         "comment": "Fondo de tags neutros" }
+    },
+
+    "accent": {
+      "blue":          { "value": "#3B82F6",              "comment": "Acento primario" },
+      "blueDim":       { "value": "#1D3A6B",              "comment": "Acento dimmed (hover/selected bg)" },
+      "blueGlow":      { "value": "rgba(59,130,246,0.20)","comment": "Glow azul" }
+    },
+
+    "state": {
+      "coherent":         { "value": "#22C55E" },
+      "coherentBg":       { "value": "#14532D" },
+      "incoherent":       { "value": "#EF4444" },
+      "incoherentBg":     { "value": "#450A0A" },
+      "abstention":       { "value": "#F59E0B" },
+      "abstentionBg":     { "value": "#451A03" },
+      "favor":            { "value": "#22C55E" },
+      "favorBg":          { "value": "#14532D" },
+      "against":          { "value": "#EF4444" },
+      "againstBg":        { "value": "#450A0A" },
+      "active":           { "value": "#22C55E" },
+      "activeBg":         { "value": "#14532D" },
+      "inactive":         { "value": "#94A3B8" },
+      "inactiveBg":       { "value": "#1C2033" }
+    },
+
+    "text": {
+      "primary":       { "value": "#F1F5F9", "comment": "Títulos y texto principal" },
+      "secondary":     { "value": "#94A3B8", "comment": "Subtítulos y metadatos" },
+      "muted":         { "value": "#4B5563", "comment": "Deshabilitado, placeholders" },
+      "inverse":       { "value": "#0D0F14", "comment": "Texto sobre fondos claros" },
+      "link":          { "value": "#3B82F6", "comment": "Links y acciones" },
+      "valueHigh":     { "value": "#22C55E", "comment": "Valores positivos" },
+      "valueWarn":     { "value": "#F59E0B", "comment": "Valores en advertencia" },
+      "valueDanger":   { "value": "#EF4444", "comment": "Valores críticos" }
+    },
+
+    "border": {
+      "subtle":        { "value": "#1E2535", "comment": "Divisores de tarjetas" },
+      "medium":        { "value": "#2A3548", "comment": "Bordes de inputs y tablas" },
+      "strong":        { "value": "#3B4D6B", "comment": "Bordes destacados" },
+      "accent":        { "value": "#3B82F6", "comment": "Borde de avatar / elementos seleccionados" }
+    },
+
+    "identity": {
+      "partyYellow":   { "value": "#F59E0B", "comment": "Banderita del partido" },
+      "patrimonyGreen":{ "value": "#22C55E", "comment": "Badge de patrimonio declarado" },
+      "starRating":    { "value": "#F59E0B", "comment": "Estrellas de rating ciudadano" }
+    }
+  },
+
+  "typography": {
+    "fontFamily": {
+      "sans": { "value": "'Inter', system-ui, -apple-system, sans-serif" },
+      "mono": { "value": "'JetBrains Mono', monospace" }
+    },
+    "fontSize": {
+      "xs":     { "value": "11px", "comment": "Labels de tabla, meta-info" },
+      "sm":     { "value": "12px", "comment": "Texto secundario, comentarios, badges" },
+      "base":   { "value": "13px", "comment": "Cuerpo de texto, descripciones" },
+      "md":     { "value": "14px", "comment": "Labels de inputs, subtítulos" },
+      "lg":     { "value": "16px", "comment": "Nombres de ley/proyecto en tabla" },
+      "xl":     { "value": "18px", "comment": "Subtítulos de card" },
+      "2xl":    { "value": "22px", "comment": "Nombre del político (h1 de perfil)" },
+      "metric": { "value": "48px", "comment": "Número principal de métrica" }
+    },
+    "fontWeight": {
+      "regular":  { "value": 400 },
+      "medium":   { "value": 500 },
+      "semibold": { "value": 600 },
+      "bold":     { "value": 700 }
+    },
+    "lineHeight": {
+      "tight":   { "value": 1.2 },
+      "snug":    { "value": 1.4 },
+      "normal":  { "value": 1.5 },
+      "relaxed": { "value": 1.6 }
+    },
+    "letterSpacing": {
+      "tight":  { "value": "-0.01em" },
+      "normal": { "value": "0em" },
+      "wide":   { "value": "0.06em" },
+      "wider":  { "value": "0.08em" },
+      "widest": { "value": "0.10em" }
+    }
+  },
+
+  "spacing": {
+    "1":  { "value": "4px" },
+    "2":  { "value": "8px" },
+    "3":  { "value": "12px" },
+    "4":  { "value": "16px" },
+    "5":  { "value": "20px" },
+    "6":  { "value": "24px" },
+    "8":  { "value": "32px" },
+    "10": { "value": "40px" }
+  },
+
+  "borderRadius": {
+    "sm":   { "value": "4px" },
+    "md":   { "value": "8px" },
+    "lg":   { "value": "12px" },
+    "xl":   { "value": "16px" },
+    "full": { "value": "9999px" }
+  },
+
+  "shadow": {
+    "card":     { "value": "0 1px 3px rgba(0,0,0,0.40), 0 4px 12px rgba(0,0,0,0.30)" },
+    "elevated": { "value": "0 4px 20px rgba(0,0,0,0.50)" },
+    "modal":    { "value": "0 20px 60px rgba(0,0,0,0.70)" },
+    "accent":   { "value": "0 0 16px rgba(59,130,246,0.30)" },
+    "sidebar":  { "value": "2px 0 8px rgba(0,0,0,0.40)" }
+  },
+
+  "transition": {
+    "fast": { "value": "100ms ease" },
+    "base": { "value": "150ms ease" },
+    "slow": { "value": "250ms ease" }
+  },
+
+  "layout": {
+    "sidebarWidth":    { "value": "160px" },
+    "topbarHeight":    { "value": "48px" },
+    "contentPadding":  { "value": "24px" },
+    "gridGap":         { "value": "16px" },
+    "cardPadding":     { "value": "24px" },
+    "gridColumns":     { "value": 12 }
+  },
+
+  "component": {
+    "card": {
+      "background":   "#181B22",
+      "border":       "1px solid #1E2535",
+      "borderRadius": "12px",
+      "padding":      "24px",
+      "shadow":       "0 1px 3px rgba(0,0,0,0.40), 0 4px 12px rgba(0,0,0,0.30)"
+    },
+    "badge": {
+      "padding":      "3px 10px",
+      "borderRadius": "4px",
+      "fontSize":     "12px",
+      "fontWeight":   600
+    },
+    "button": {
+      "primary": {
+        "background":   "#3B82F6",
+        "color":        "#ffffff",
+        "borderRadius": "8px",
+        "padding":      "8px 20px",
+        "fontSize":     "13px",
+        "fontWeight":   600
+      },
+      "secondary": {
+        "background":   "transparent",
+        "color":        "#3B82F6",
+        "border":       "1px solid #2A3548",
+        "borderRadius": "8px",
+        "padding":      "7px 18px",
+        "fontSize":     "13px",
+        "fontWeight":   500
+      }
+    },
+    "input": {
+      "background":   "#13151C",
+      "border":       "1px solid #2A3548",
+      "borderRadius": "8px",
+      "padding":      "10px 14px",
+      "fontSize":     "13px",
+      "color":        "#F1F5F9",
+      "focusBorder":  "#3B82F6"
+    },
+    "avatar": {
+      "border":       "2px solid #3B82F6",
+      "borderRadius": "9999px",
+      "sizeLg":       "72px",
+      "sizeMd":       "40px",
+      "sizeSm":       "32px"
+    },
+    "sidebar": {
+      "width":        "160px",
+      "background":   "#111318",
+      "itemHeight":   "36px",
+      "itemPadding":  "0 12px",
+      "itemRadius":   "8px",
+      "activeBackground": "#1A2035",
+      "activeColor":  "#3B82F6"
+    }
+  },
+
+  "uxpilot": {
+    "promptBase": "Dark dashboard institucional. Fondo base #0D0F14. Cards en #181B22 con border 1px solid #1E2535 y border-radius 12px. Acento azul #3B82F6. Texto primario #F1F5F9, secundario #94A3B8. Badges de estado: verde #22C55E fondo #14532D (coherente), rojo #EF4444 fondo #450A0A (incoherente), ámbar #F59E0B fondo #451A03 (abstención). Tipografía Inter. Sidebar 160px, grid 12 columnas, gap 16px.",
+    "forbiddenPatterns": [
+      "Fondo blanco o gris claro",
+      "Gradientes en botones primarios",
+      "Fuentes serif",
+      "Bordes gruesos blancos",
+      "Íconos rellenos (filled) - usar solo outline",
+      "Cualquier acento que no sea #3B82F6 salvo estados",
+      "Sombras de colores claros",
+      "Texto sobre fondo de mismo tono (bajo contraste)"
+    ]
+  }
+}
