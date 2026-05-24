@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "d764ee1e138b69af",
+        "id": "ada790ba34dae90e",
         "type": "tabs",
         "children": [
           {
-            "id": "13e357554c335875",
+            "id": "ba2e89f7af00c3a5",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "prompts/components/task.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "task"
+              "title": "New tab"
             }
           }
         ]
@@ -183,7 +179,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "13e357554c335875",
+  "active": "8311487d07952dae",
   "lastOpenFiles": [
     "prompts/components/perfil_politico_screen/CitizenParticipation/data.md",
     "prompts/components/perfil_politico_screen/CoherenceHistory/data.md",
