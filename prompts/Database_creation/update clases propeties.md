@@ -11,7 +11,8 @@ These classes represent the database structure only. They will later be converte
 
 Analyze every component inside:
 
-`prompts/components/perfil_politico_screen/`
+`/controlf_fronted/src/componentes`
+
 
 For each component:
 
@@ -162,7 +163,7 @@ Reason:
     
 - Do not redesign the schema.
     
-- Do not create new tables.
+- Do not create new tables (just if needed).
     
 - Do not create relationships.
     

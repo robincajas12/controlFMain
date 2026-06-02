@@ -7,8 +7,12 @@ public class Ley {
 
     private Integer id;
     private String titulo;
+    private String codigo;
+    private String tipoExpediente;
+    private String proponente;
     private String descripcionOriginal;
     private String descripcionSimplificada;
+    private String impactoSocial;
     private String categoria;
     private EstadoLey estado;
     private LocalDate fechaIngreso;

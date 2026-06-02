@@ -1,11 +1,13 @@
 package com.controlf.db.schema;
 
 import com.controlf.db.schema.enums.ImpactoEsperado;
+import com.controlf.db.schema.enums.NivelCoherencia;
 
 public class VinculoPromesaLey {
 
     private Integer id;
     private ImpactoEsperado impactoEsperado;
+    private NivelCoherencia nivelCoherencia;
     private String analisisCoherencia;
 
     /*

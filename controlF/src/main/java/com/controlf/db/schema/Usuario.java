@@ -8,6 +8,7 @@ public class Usuario {
     private String nombre;
     private String email;
     private String passwordHash;
+    private String avatarUrl;
     private Rol rol;
     private LocalDateTime fechaRegistro;
 
