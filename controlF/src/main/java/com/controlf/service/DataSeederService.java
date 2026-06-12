@@ -3,6 +3,8 @@ package com.controlf.service;
 import com.controlf.db.repository.*;
 import com.controlf.db.schema.*;
 import com.controlf.db.schema.enums.EstadoLey;
+import com.controlf.db.schema.enums.ImpactoEsperado;
+import com.controlf.db.schema.enums.NivelCoherencia;
 import com.controlf.db.schema.enums.TipoVoto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,7 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,61 +26,87 @@ public class DataSeederService {
     private final LeyRepository leyRepository;
     private final VotoRepository votoRepository;
     private final PromesaRepository promesaRepository;
+    private final VinculoPromesaLeyRepository vinculoRepository;
+    private final ConfiguracionRepository configuracionRepository;
+    private final ComentarioRepository comentarioRepository;
+    private final CalificacionRepository calificacionRepository;
 
     @Transactional
     public void seed() {
-        if (usuarioRepository.count() > 0) return;
+        if (politicoRepository.count() > 0) return;
 
-        Usuario admin = new Usuario();
-        admin.setNombre("Admin");
-        admin.setEmail("admin@controlf.com");
-        admin.setPasswordHash("admin");
-        admin.setAvatarUrl("https://ui-avatars.com/api/?name=Admin");
-        admin.setRol(Usuario.Rol.ADMIN);
-        admin.setFechaRegistro(LocalDateTime.now());
-        usuarioRepository.save(admin);
+        // 1. CONFIGURACION
+        configuracionRepository.saveAll(Arrays.asList(
+            new Configuracion("UMBRAL_COHERENCIA_ALTA", "70", "Límite para ser Coherente"),
+            new Configuracion("UMBRAL_COHERENCIA_MEDIA", "40", "Límite para ser Ambiguo")
+        ));
 
-        Politico p1 = new Politico();
-        p1.setNombreCompleto("Juanito Perez");
-        p1.setPartidoPolitico("Mov. Transparencia");
-        p1.setRegion("Lima");
-        p1.setCargoActual("Congresista");
-        p1.setPatrimonioDeclarado(new BigDecimal("150000"));
-        p1.setFotoUrl("https://ui-avatars.com/api/?name=Juanito+Perez");
-        p1.setEstaActivo(true);
-        p1.setAntecedentes("Sin antecedentes.");
-        p1.setComision("Fiscalización");
+        // 2. USUARIOS
+        Usuario u1 = new Usuario(null, "https://i.pravatar.cc/150?u=admin", "admin@controlf.ec", LocalDateTime.now(), "Admin Auditor", "hash", Usuario.Rol.ADMIN);
+        Usuario u2 = new Usuario(null, "https://i.pravatar.cc/150?u=juan", "juan.perez@ecuador.com", LocalDateTime.now(), "Juan Pérez", "hash", Usuario.Rol.CIUDADANO);
+        Usuario u3 = new Usuario(null, "https://i.pravatar.cc/150?u=maria", "maria.lopez@veeduria.ec", LocalDateTime.now(), "Maria López", "hash", Usuario.Rol.CIUDADANO);
+        usuarioRepository.saveAll(Arrays.asList(u1, u2, u3));
+
+        // 3. POLITICOS
+        Politico p1 = new Politico(null, "Daniel Noboa Azín", "ADN", "Presidente de la República", "Guayas", "Ejecutivo", true, new BigDecimal("600000"), 
+            "Empresario. Presidente más joven de la historia de Ecuador.", "https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Noboa_en_24_mayo_de_2026.jpg/960px-Noboa_en_24_mayo_de_2026.jpg", null, null, null, null);
         
-        Politico p2 = new Politico();
-        p2.setNombreCompleto("Maria Garcia");
-        p2.setPartidoPolitico("Justicia Social");
-        p2.setRegion("Arequipa");
-        p2.setCargoActual("Congresista");
-        p2.setPatrimonioDeclarado(new BigDecimal("80000"));
-        p2.setFotoUrl("https://ui-avatars.com/api/?name=Maria+Garcia");
-        p2.setEstaActivo(true);
-        p2.setAntecedentes("Reporte de ética 2024.");
-        p2.setComision("Salud");
+        Politico p2 = new Politico(null, "Henry Kronfle", "PSC", "Ex-Presidente Asamblea", "Guayas", "Legislativo", false, new BigDecimal("450000"), 
+            "Empresario guayaquileño. Candidato presidencial 2025.", "https://upload.wikimedia.org/wikipedia/commons/f/fa/Henry_Kronfle_2024.jpg", null, null, null, null);
+        
+        Politico p3 = new Politico(null, "Viviana Veloz", "RC5", "Presidenta Asamblea", "Santo Domingo", "Fiscalización", true, new BigDecimal("85000"), 
+            "Líder del bloque correísta. Primera mujer de Santo Domingo en presidir la Asamblea.", "https://upload.wikimedia.org/wikipedia/commons/6/65/Viviana_Veloz_en_diciembre_de_2024.jpeg", null, null, null, null);
+        
+        Politico p4 = new Politico(null, "Pabel Muñoz", "RC5", "Alcalde de Quito", "Pichincha", "Administración Local", true, new BigDecimal("120000"), 
+            "Sociólogo. Ex-Secretario de Planificación.", "https://upload.wikimedia.org/wikipedia/commons/e/ef/Pabel_Mu%C3%B1oz_2022.jpg", null, null, null, null);
+        
+        Politico p5 = new Politico(null, "Jan Topić", "SUMA", "Candidato Presidencial", "Guayas", "Seguridad", true, new BigDecimal("900000"), 
+            "Empresario en seguridad y tecnología. Ex-combatiente.", "https://upload.wikimedia.org/wikipedia/commons/5/5b/FOTOS_PERFIL-03_JAN_TOPIC.png", null, null, null, null);
+        
+        Politico p6 = new Politico(null, "Luisa González", "RC5", "Presidenta RC5", "Manabí", "Política Nacional", true, new BigDecimal("110000"), 
+            "Abogada. Candidata presidencial 2023 y 2025.", "https://live.staticflickr.com/65535/52340671842_9664a76f47_o.jpg", null, null, null, null);
 
-        politicoRepository.saveAll(Arrays.asList(p1, p2));
+        politicoRepository.saveAll(Arrays.asList(p1, p2, p3, p4, p5, p6));
 
-        Ley l1 = new Ley();
-        l1.setCodigo("EXP-2024-001");
-        l1.setTitulo("Ley de Transparencia Digital");
-        l1.setDescripcionSimplificada("Obliga a entidades públicas a publicar datos en tiempo real.");
-        l1.setCategoria("Tecnología");
-        l1.setEstado(EstadoLey.APROBADA);
-        l1.setFechaIngreso(LocalDate.now());
-        l1.setProponente("Comisión de Ciencia");
-        l1.setImpactoSocial("Alto impacto en la transparencia.");
-        leyRepository.save(l1);
+        // 4. LEYES
+        List<Ley> leyes = new ArrayList<>();
+        leyes.add(new Ley(null, "LEY-IVA-15", "Ley para el Conflicto Armado Interno", null, "Incremento del IVA del 12% al 15% para financiar la guerra contra el crimen.", EstadoLey.APROBADA, LocalDate.of(2024, 2, 1), "Aumento del costo de la canasta básica.", "Daniel Noboa", "Urgente Económico", "Ley de incremento del IVA", null, null, null, null));
+        leyes.add(new Ley(null, "LEY-ENER-01", "Ley de Competitividad Energética", null, "Promueve inversión privada en generación eléctrica para evitar apagones.", EstadoLey.APROBADA, LocalDate.of(2024, 1, 10), "Incentiva proyectos solares y eólicos.", "Daniel Noboa", "Urgente Económico", "Ley No Más Apagones", null, null, null, null));
+        leyes.add(new Ley(null, "LEY-CONSULTA", "Aplicación Consulta Popular 2024", null, "Incremento drástico de penas para terrorismo y sicariato.", EstadoLey.APROBADA, LocalDate.of(2024, 7, 15), "Endurecimiento del sistema carcelario.", "Asamblea Nacional", "Ordinario", "Reformas Consulta Popular", null, null, null, null));
+        leyes.add(new Ley(null, "LEY-TUR-01", "Ley de Fortalecimiento Turístico", null, "Reducción de impuestos para eventos y turismo.", EstadoLey.APROBADA, LocalDate.of(2024, 3, 25), "Incentiva el turismo nacional.", "Daniel Noboa", "Urgente Económico", "Ley de Turismo", null, null, null, null));
+        leyes.add(new Ley(null, "LEY-TRA-01", "Ley de Extradición y Seguridad", null, "Reformas para permitir la extradición de ecuatorianos vinculados al narco.", EstadoLey.APROBADA, LocalDate.of(2024, 5, 10), "Herramienta contra el narcotráfico.", "Asamblea Nacional", "Ordinario", "Ley de Extradición", null, null, null, null));
+        
+        leyRepository.saveAll(leyes);
 
-        Voto v1 = new Voto();
-        v1.setLey(l1);
-        v1.setPolitico(p1);
-        v1.setTipoVoto(TipoVoto.FAVOR);
-        v1.setAsistencia(true);
-        v1.setFechaVoto(LocalDateTime.now());
-        votoRepository.save(v1);
+        // 5. PROMESAS
+        List<Promesa> promesas = new ArrayList<>();
+        promesas.add(new Promesa(null, "No subiré impuestos a la clase media ni sectores populares.", "Economía", LocalDate.of(2023, 10, 1), p1, null));
+        promesas.add(new Promesa(null, "Plan Fénix: Control total de las cárceles y seguridad.", "Seguridad", LocalDate.of(2023, 9, 15), p1, null));
+        promesas.add(new Promesa(null, "Extradición inmediata para criminales peligrosos.", "Seguridad", LocalDate.of(2023, 8, 15), p5, null));
+        promesas.add(new Promesa(null, "Protección de cada hectárea de nuestra Amazonía.", "Medio Ambiente", LocalDate.of(2023, 9, 10), p6, null));
+        promesaRepository.saveAll(promesas);
+
+        // 6. VOTOS (Matriz masiva)
+        // Noboa (p1)
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.FAVOR, leyes.get(0), p1));
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.FAVOR, leyes.get(1), p1));
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.FAVOR, leyes.get(3), p1));
+        // Veloz (p3)
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.CONTRA, leyes.get(0), p3));
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.FAVOR, leyes.get(1), p3));
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.CONTRA, leyes.get(4), p3));
+        // Topic (p5)
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.FAVOR, leyes.get(0), p5));
+        votoRepository.save(new Voto(null, true, LocalDateTime.now(), TipoVoto.FAVOR, leyes.get(4), p5));
+
+        // 7. VINCULOS
+        vinculoRepository.save(new VinculoPromesaLey(null, ImpactoEsperado.NEGATIVO, NivelCoherencia.INCUMPLE, "Aprobó el alza del IVA al 15% pese a prometer repetidamente en campaña que no subiría impuestos.", promesas.get(0), leyes.get(0)));
+        vinculoRepository.save(new VinculoPromesaLey(null, ImpactoEsperado.POSITIVO, NivelCoherencia.CUMPLE, "Votó a favor de la extradición tal como prometió en su plan de mano dura.", promesas.get(2), leyes.get(4)));
+
+        // 8. SOCIAL
+        Comentario com = new Comentario(null, "El IVA nos está matando el bolsillo, Noboa mintió.", LocalDateTime.now(), true, u2);
+        comentarioRepository.save(com);
+        p1.setComentarios(new ArrayList<>(List.of(com)));
+        politicoRepository.save(p1);
     }
 }
