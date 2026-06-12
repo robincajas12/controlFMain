@@ -1,32 +1,34 @@
 package com.controlf.db.schema;
 
 import com.controlf.db.schema.enums.TipoVoto;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "votos")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Voto {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Enumerated(EnumType.STRING)
     private TipoVoto tipoVoto;
+
     private Boolean asistencia;
     private LocalDateTime fechaVoto;
 
-    /* 
+    @ManyToOne
+    @JoinColumn(name = "politico_id", nullable = false)
+    private Politico politico;
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
-
-    public TipoVoto getTipoVoto() {
-        return tipoVoto;
-    }
-
-    public void setTipoVoto(TipoVoto tipoVoto) {
-        this.tipoVoto = tipoVoto;
-    }
-
-    public Boolean getAsistencia() { return asistencia; }
-    public void setAsistencia(Boolean asistencia) { this.asistencia = asistencia; }
-
-    public LocalDateTime getFechaVoto() { return fechaVoto; }
-    public void setFechaVoto(LocalDateTime fechaVoto) { this.fechaVoto = fechaVoto; }
-    */
+    @ManyToOne
+    @JoinColumn(name = "ley_id", nullable = false)
+    private Ley ley;
 }

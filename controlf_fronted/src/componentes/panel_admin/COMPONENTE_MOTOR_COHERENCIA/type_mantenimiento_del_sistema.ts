@@ -1,3 +1,16 @@
+/**
+ * Endpoints:
+ * - GET  /api/admin/mantenimiento
+ * 
+ * - POST /api/admin/vinculos
+ *   Body: { 
+ *     "promesaId": number, 
+ *     "leyId": number, 
+ *     "impactoEsperado": "POSITIVO" | "NEGATIVO", 
+ *     "nivelCoherencia": "CUMPLE" | "INCUMPLE" | "AMBIGUO",
+ *     "analisis": string 
+ *   }
+ */
 interface PanelMantenimientoServidor {
   id: string;
   titulo: string;

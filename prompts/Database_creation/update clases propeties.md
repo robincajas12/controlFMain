@@ -13,7 +13,6 @@ Analyze every component inside:
 
 `/controlf_fronted/src/componentes`
 
-
 For each component:
 
 1. Read `interface.ts`
@@ -163,7 +162,7 @@ Reason:
     
 - Do not redesign the schema.
     
-- Do not create new tables (just if needed).
+- Do not create new tables.
     
 - Do not create relationships.
     
@@ -171,4 +170,4 @@ Reason:
     
 - Be conservative: add a field only when there is no reasonable way to obtain the required data from the existing schema.
     
-- At the end, provide a consolidated list of all schema modifications required.
+- now create the JPA implementation now in this stage with all the info you have please create the jpa implemenation needed forthis to work

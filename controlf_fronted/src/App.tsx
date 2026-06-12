@@ -1,79 +1,37 @@
-import { useState } from 'react';
-import { Routes, Route, Link, useParams } from 'react-router-dom'
-
-function Home() {
-  const [dataU, ] = useState(async ()=>await fetch('http://127.0.0.1:8080/saludo?nombre=Robinson')
-  .then(t => t.json()))
-
-  return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px', fontFamily: 'sans-serif', lineHeight: '1.6' }}>
-      <h1>React Router Tutorial {dataU}</h1>
-      <p>Welcome! This is a minimal setup to help you understand how routing works in React.</p>
-
-      <section>
-        <h2>1. Basic Setup</h2>
-        <p>In <code>src/main.tsx</code>, we've wrapped the <code>&lt;App /&gt;</code> with <code>&lt;BrowserRouter&gt;</code>. This enables routing across your entire application.</p>
-      </section>
-
-      <section>
-        <h2>2. Defining Routes</h2>
-        <p>Inside <code>App.tsx</code>, we use <code>&lt;Routes&gt;</code> and <code>&lt;Route&gt;</code> to map paths to components:</p>
-        <pre style={{ background: '#f4f4f4', padding: '10px', borderRadius: '5px', color: '#333' }}>
-{`<Routes>
-  <Route path="/" element={<Home />} />
-  <Route path="/about" element={<About />} />
-  <Route path="/user/:id" element={<UserProfile />} />
-</Routes>`}
-        </pre>
-      </section>
-
-      <section>
-        <h2>3. Navigation</h2>
-        <p>Instead of <code>&lt;a&gt;</code> tags, use the <code>&lt;Link&gt;</code> component to navigate without reloading the page:</p>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Link to="/about" style={{ color: '#007bff' }}>Go to About Page</Link>
-          <Link to="/user/123" style={{ color: '#007bff' }}>Go to User 123</Link>
-        </div>
-      </section>
-
-      <section>
-        <h2>4. Hooks</h2>
-        <ul>
-          <li><strong>useNavigate:</strong> For programmatic navigation (e.g., after submitting a form).</li>
-          <li><strong>useParams:</strong> To access dynamic parameters in the URL.</li>
-        </ul>
-      </section>
-    </div>
-  )
-}
-
-function About() {
-  return (
-    <div style={{ padding: '20px' }}>
-      <h1>About Page</h1>
-      <p>This is a secondary route.</p>
-      <Link to="/" style={{ color: '#007bff' }}>Back to Home</Link>
-    </div>
-  )
-}
-
-function UserProfile() {
-  const { id } = useParams()
-  return (
-    <div style={{ padding: '20px' }}>
-      <h1>User Profile</h1>
-      <p>Viewing profile for User ID: <strong>{id}</strong></p>
-      <Link to="/" style={{ color: '#007bff' }}>Back to Home</Link>
-    </div>
-  )
-}
+import { Routes, Route, Navigate } from 'react-router-dom'
+import MainLayout from './componentes/layout/MainLayout'
+import DirectorioPoliticosPage from './componentes/directorio_politicos/DirectorioPoliticosPage'
+import PerfilPoliticoPage from './componentes/perfil_politico_screen/PerfilPoliticoPage'
+import DirectorioLeyesPage from './componentes/directorio_leyes/DirectorioLeyesPage'
+import PerfilLeyPage from './componentes/perfil_ley/PerfilLeyPage'
+import AdminPage from './componentes/panel_admin/AdminPage'
+import DashboardPage from './componentes/DashboardPage'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/about" element={<About />} />
-      <Route path="/user/:id" element={<UserProfile />} />
+      <Route path="/" element={<MainLayout />}>
+        {/* Ruta principal: Directorio de Políticos */}
+        <Route index element={<DirectorioPoliticosPage />} />
+        
+        {/* Dashboard */}
+        <Route path="dashboard" element={<DashboardPage />} />
+
+        {/* Detalle del Político */}
+        <Route path="politico/:id" element={<PerfilPoliticoPage />} />
+
+        {/* Directorio de Leyes */}
+        <Route path="leyes" element={<DirectorioLeyesPage />} />
+
+        {/* Detalle de la Ley */}
+        <Route path="ley/:id" element={<PerfilLeyPage />} />
+
+        {/* Panel de Administración */}
+        <Route path="admin" element={<AdminPage />} />
+        
+        {/* Redirección por defecto */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
     </Routes>
   )
 }

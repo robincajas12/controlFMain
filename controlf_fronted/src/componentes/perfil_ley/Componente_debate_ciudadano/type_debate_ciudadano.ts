@@ -1,3 +1,13 @@
+/**
+ * Endpoints:
+ * - GET  /api/leyes/{id}/debate
+ * 
+ * - POST /api/leyes/{id}/comentarios
+ *   Body: { "texto": string, "usuarioId": number }
+ * 
+ * - POST /api/leyes/{id}/calificaciones
+ *   Body: { "puntaje": number, "usuarioId": number }
+ */
 export interface DebateCiudadano {
   id: string;
   titulo: string;

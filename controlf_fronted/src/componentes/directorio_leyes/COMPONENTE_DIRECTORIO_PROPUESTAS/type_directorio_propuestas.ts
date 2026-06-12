@@ -1,3 +1,9 @@
+/**
+ * Endpoint: GET /api/leyes
+ * Query Params: ?termino={string}&categoria={string}&estado={string}&anio={number}
+ * 
+ * Response: ExpedienteLegislativoDTO[]
+ */
 interface DirectorioPropuestas {
   id: string;
   terminoBusqueda: string;

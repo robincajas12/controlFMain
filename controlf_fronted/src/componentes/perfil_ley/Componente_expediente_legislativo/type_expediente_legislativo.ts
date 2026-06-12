@@ -1,3 +1,7 @@
+/**
+ * Endpoint:
+ * - GET /api/leyes -> Obtiene listado general de leyes.
+ */
 interface ExpedienteLegislativo {
   id: string;
   tipoExpediente: string;

@@ -2,22 +2,36 @@ package com.controlf.db.schema;
 
 import com.controlf.db.schema.enums.ImpactoEsperado;
 import com.controlf.db.schema.enums.NivelCoherencia;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Entity
+@Table(name = "vinculos_promesa_ley")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class VinculoPromesaLey {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Enumerated(EnumType.STRING)
     private ImpactoEsperado impactoEsperado;
+
+    @Enumerated(EnumType.STRING)
     private NivelCoherencia nivelCoherencia;
+
+    @Column(columnDefinition = "TEXT")
     private String analisisCoherencia;
 
-    /*
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    @ManyToOne
+    @JoinColumn(name = "promesa_id", nullable = false)
+    private Promesa promesa;
 
-    public ImpactoEsperado getImpactoEsperado() { return impactoEsperado; }
-    public void setImpactoEsperado(ImpactoEsperado impactoEsperado) { this.impactoEsperado = impactoEsperado; }
-
-    public String getAnalisisCoherencia() { return analisisCoherencia; }
-    public void setAnalisisCoherencia(String analisisCoherencia) { this.analisisCoherencia = analisisCoherencia; }
-    */
+    @ManyToOne
+    @JoinColumn(name = "ley_id", nullable = false)
+    private Ley ley;
 }

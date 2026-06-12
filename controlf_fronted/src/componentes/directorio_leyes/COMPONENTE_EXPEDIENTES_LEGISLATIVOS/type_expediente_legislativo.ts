@@ -1,3 +1,7 @@
+/**
+ * Endpoint:
+ * - GET /api/leyes -> Obtiene lista de leyes para el directorio.
+ */
 interface ExpedienteLegislativo {
   id: string; // Código de la ley
   tituloLey: string;

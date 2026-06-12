@@ -1,3 +1,9 @@
+/**
+ * Endpoint: GET /api/politicos
+ * Query Params: ?nombre={string}&partido={string}&region={string}&comision={string}
+ * 
+ * Response: CartaPoliticoDTO[]
+ */
 interface BarraBusqueda {
   id: string;                  // Identificador de la barra
   titulo: string;              // Título principal de la página

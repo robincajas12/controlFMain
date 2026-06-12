@@ -1,0 +1,209 @@
+package com.controlf.service;
+
+import com.controlf.db.repository.CalificacionRepository;
+import com.controlf.db.repository.ComentarioRepository;
+import com.controlf.db.repository.LeyRepository;
+import com.controlf.db.repository.UsuarioRepository;
+import com.controlf.db.repository.VotoRepository;
+import com.controlf.db.schema.Calificacion;
+import com.controlf.db.schema.Comentario;
+import com.controlf.db.schema.Ley;
+import com.controlf.db.schema.Usuario;
+import com.controlf.db.schema.enums.EstadoLey;
+import com.controlf.db.schema.enums.TipoVoto;
+import com.controlf.dto.*;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class LeyService {
+
+    private final LeyRepository leyRepository;
+    private final VotoRepository votoRepository;
+    private final CalificacionRepository calificacionRepository;
+    private final ComentarioRepository comentarioRepository;
+    private final UsuarioRepository usuarioRepository;
+
+    private static final int CALIFICACION_MAXIMA = 5;
+
+    public FiltrosLeyDTO getFiltros() {
+        return FiltrosLeyDTO.builder()
+                .categorias(leyRepository.findDistinctCategorias())
+                .estados(java.util.Arrays.stream(EstadoLey.values()).map(Enum::name).collect(Collectors.toList()))
+                .build();
+    }
+
+    public GrillaLeyesDTO getLeyesFiltradas(int pagina, int size, String termino, String categoria, String estado) {
+        org.springframework.data.jpa.domain.Specification<Ley> spec = org.springframework.data.jpa.domain.Specification.where((org.springframework.data.jpa.domain.Specification<Ley>) null);
+
+        if (termino != null && !termino.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("titulo")), "%" + termino.toLowerCase() + "%"),
+                cb.like(cb.lower(root.get("codigo")), "%" + termino.toLowerCase() + "%")
+            ));
+        }
+        if (categoria != null && !categoria.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("categoria"), categoria));
+        }
+        if (estado != null && !estado.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("estado"), EstadoLey.valueOf(estado)));
+        }
+
+        org.springframework.data.domain.Page<Ley> page = leyRepository.findAll(spec, org.springframework.data.domain.PageRequest.of(pagina - 1, size));
+
+        List<ExpedienteLegislativoDTO> leyes = page.getContent().stream()
+                .map(this::mapToExpedienteDTO)
+                .collect(Collectors.toList());
+
+        return GrillaLeyesDTO.builder()
+                .id("grilla-leyes")
+                .leyes(leyes)
+                .paginaActual(pagina)
+                .totalPaginas(page.getTotalPages())
+                .build();
+    }
+
+    public PerfilLeyDTO getFullPerfilLey(Integer id) {
+        return PerfilLeyDTO.builder()
+                .contenido(getContenidoLey(id))
+                .votacion(getResultadoVotacion(id))
+                .auditoria(getAuditoriaCoherencia(id))
+                .debate(getDebateCiudadano(id))
+                .build();
+    }
+
+    public List<ExpedienteLegislativoDTO> getAllLeyesAsExpedientes() {
+        return leyRepository.findAll().stream()
+                .map(this::mapToExpedienteDTO)
+                .collect(Collectors.toList());
+    }
+
+    public void addComentario(Integer leyId, ComentarioRequestDTO request) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+
+        Comentario c = new Comentario();
+        c.setTexto(request.getTexto());
+        c.setUsuario(u);
+        c.setFecha(LocalDateTime.now());
+        c.setEsBasadoEnHechos(false);
+
+        comentarioRepository.save(c);
+        ley.getComentarios().add(c);
+        leyRepository.save(ley);
+    }
+
+    public void addCalificacion(Integer leyId, CalificacionRequestDTO request) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+
+        Calificacion cal = new Calificacion();
+        cal.setPuntaje(request.getPuntaje());
+        cal.setUsuario(u);
+        cal.setFecha(LocalDateTime.now());
+
+        calificacionRepository.save(cal);
+        ley.getCalificaciones().add(cal);
+        leyRepository.save(ley);
+    }
+
+    public ContenidoLeyDTO getContenidoLey(Integer leyId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        return ContenidoLeyDTO.builder()
+                .id(ley.getId().toString())
+                .titulo(ley.getTitulo())
+                .resumenEjecutivo(ley.getDescripcionSimplificada())
+                .impactoSocial(ley.getImpactoSocial())
+                .build();
+    }
+
+    public DebateCiudadanoDTO getDebateCiudadano(Integer leyId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        Double avg = calificacionRepository.findAveragePuntajeByLeyId(leyId);
+
+        return DebateCiudadanoDTO.builder()
+                .id(ley.getId().toString())
+                .titulo("Debate Ciudadano: " + ley.getTitulo())
+                .puntuacionPromedio(avg != null ? avg : 0.0)
+                .puntuacionMaxima(CALIFICACION_MAXIMA)
+                .comentarios(ley.getComentarios().stream().map(c -> ComentarioDebateDTO.builder()
+                        .id(c.getId().toString())
+                        .usuario(c.getUsuario().getNombre())
+                        .mensaje(c.getTexto())
+                        .fecha(c.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                        .avatarUrl(c.getUsuario().getAvatarUrl())
+                        .build()).collect(Collectors.toList()))
+                .placeholderComentario("Escribe tu opinión sobre esta ley...")
+                .tieneBotonEnviar(true)
+                .build();
+    }
+
+    public AuditoriaCoherenciaDTO getAuditoriaCoherencia(Integer leyId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        return AuditoriaCoherenciaDTO.builder()
+                .id(ley.getId().toString())
+                .titulo("Auditoría de Coherencia")
+                .subtitulo("Cruce de datos para: " + ley.getTitulo())
+                .filas(ley.getVinculos().stream().map(v -> FilaAuditoriaDTO.builder()
+                        .id(v.getPromesa().getPolitico().getId().toString())
+                        .nombre(v.getPromesa().getPolitico().getNombreCompleto())
+                        .fotoUrl(v.getPromesa().getPolitico().getFotoUrl())
+                        .bloque(v.getPromesa().getPolitico().getPartidoPolitico())
+                        .voto(findVotoForPolitico(ley, v.getPromesa().getPolitico()))
+                        .analisisCoherencia(v.getAnalisisCoherencia())
+                        .nivelCoherencia(v.getNivelCoherencia().name().toLowerCase())
+                        .build()).collect(Collectors.toList()))
+                .textoVerMas("Ver detalles de la metodología de auditoría")
+                .build();
+    }
+
+    private String findVotoForPolitico(Ley ley, com.controlf.db.schema.Politico p) {
+        return ley.getVotos().stream()
+                .filter(v -> v.getPolitico().getId().equals(p.getId()))
+                .map(v -> v.getTipoVoto().name())
+                .findFirst()
+                .orElse("N/A");
+    }
+
+    public ResultadoVotacionDTO getResultadoVotacion(Integer leyId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        long favor = votoRepository.countByLeyIdAndTipoVoto(leyId, TipoVoto.FAVOR);
+        long contra = votoRepository.countByLeyIdAndTipoVoto(leyId, TipoVoto.CONTRA);
+        long abstencion = votoRepository.countByLeyIdAndTipoVoto(leyId, TipoVoto.ABSTENCION);
+        long total = favor + contra + abstencion;
+
+        return ResultadoVotacionDTO.builder()
+                .id(ley.getId().toString())
+                .titulo("Resultado Votación: " + ley.getTitulo())
+                .votosFavor(favor)
+                .votosContra(contra)
+                .votosAbstencion(abstencion)
+                .valorPrincipal((double) favor)
+                .unitadPrincipal("Votos")
+                .escalaMinima(0)
+                .escalaMedia((int) (total > 0 ? total / 2 : 0))
+                .escalaMaxima((int) total)
+                .tieneMenuOpciones(true)
+                .build();
+    }
+
+    private ExpedienteLegislativoDTO mapToExpedienteDTO(Ley ley) {
+        return ExpedienteLegislativoDTO.builder()
+                .id(ley.getId().toString())
+                .codigoExpediente(ley.getCodigo())
+                .titulo(ley.getTitulo())
+                .tituloLey(ley.getTitulo())
+                .categoria(ley.getCategoria())
+                .estado(ley.getEstado().name())
+                .estaAprobado(ley.getEstado() == EstadoLey.APROBADA)
+                .proponente(ley.getProponente())
+                .accionUrl("/leyes/" + ley.getId())
+                .build();
+    }
+}

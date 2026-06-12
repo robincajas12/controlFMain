@@ -1,8 +1,21 @@
+/**
+ * Endpoint: GET /api/leyes/{id}/votacion
+ * 
+ * Response Body:
+ * {
+ *   "id": string,
+ *   "titulo": string,
+ *   "votosFavor": number,
+ *   "votosContra": number,
+ *   "votosAbstencion": number,
+ *   "valorPrincipal": number
+ * }
+ */
 interface ResultadoVotacion {
   id: string;
   titulo: string;
   valorPrincipal: number;
-  unidadPrincipal: string;
+  unitadPrincipal: string;
   votosFavor: number;
   votosContra: number;
   votosAbstencion: number;

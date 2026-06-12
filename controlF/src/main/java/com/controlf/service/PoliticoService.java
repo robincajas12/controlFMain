@@ -1,0 +1,180 @@
+package com.controlf.service;
+
+import com.controlf.db.repository.*;
+import com.controlf.db.schema.Calificacion;
+import com.controlf.db.schema.Comentario;
+import com.controlf.dto.CalificacionRequestDTO;
+import com.controlf.dto.CartaPoliticoDTO;
+import com.controlf.dto.ComentarioRequestDTO;
+import com.controlf.db.schema.Politico;
+import com.controlf.db.schema.Usuario;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class PoliticoService {
+
+    private final PoliticoRepository politicoRepository;
+    private final VinculoPromesaLeyRepository vinculoRepository;
+    private final LeyRepository leyRepository;
+    private final ComentarioRepository comentarioRepository;
+    private final CalificacionRepository calificacionRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final ConfiguracionRepository configuracionRepository;
+
+    public com.controlf.dto.PerfilPoliticoDTO getPoliticoProfile(Integer id) {
+        Politico p = politicoRepository.findById(id).orElseThrow();
+        Double coherencia = vinculoRepository.findAverageCoherenciaByPoliticoId(p.getId());
+
+        List<com.controlf.dto.HistorialCoherenciaDTO> historial = p.getPromesas().stream()
+                .flatMap(promesa -> promesa.getVinculos().stream())
+                .map(v -> com.controlf.dto.HistorialCoherenciaDTO.builder()
+                        .leyTitulo(v.getLey().getTitulo())
+                        .votoReal(findVotoForPolitico(v.getLey(), p))
+                        .resultado(v.getNivelCoherencia().name())
+                        .analisis(v.getAnalisisCoherencia())
+                        .build())
+                .collect(Collectors.toList());
+
+        return com.controlf.dto.PerfilPoliticoDTO.builder()
+                .id(p.getId().toString())
+                .nombre(p.getNombreCompleto())
+                .organizacion(p.getPartidoPolitico())
+                .cargo(p.getCargoActual())
+                .patrimonio(p.getPatrimonioDeclarado() != null ? "$" + p.getPatrimonioDeclarado().toString() : "No declarado")
+                .fotoUrl(p.getFotoUrl())
+                .antecedentes(p.getAntecedentes())
+                .estaActivo(p.getEstaActivo())
+                .porcentajeCoherencia(coherencia != null ? coherencia : 0.0)
+                .estadoEtiqueta(determineEstadoEtiqueta(coherencia))
+                .historial(historial)
+                .comentarios(p.getComentarios().stream().map(c -> com.controlf.dto.ComentarioDebateDTO.builder()
+                        .id(c.getId().toString())
+                        .usuario(c.getUsuario().getNombre())
+                        .mensaje(c.getTexto())
+                        .fecha(c.getFecha().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                        .avatarUrl(c.getUsuario().getAvatarUrl())
+                        .build()).collect(Collectors.toList()))
+                .build();
+    }
+
+    private String findVotoForPolitico(com.controlf.db.schema.Ley ley, Politico p) {
+        return ley.getVotos().stream()
+                .filter(v -> v.getPolitico().getId().equals(p.getId()))
+                .map(v -> v.getTipoVoto().name())
+                .findFirst()
+                .orElse("N/A");
+    }
+
+    public com.controlf.dto.FiltrosPoliticoDTO getFiltros() {
+        return com.controlf.dto.FiltrosPoliticoDTO.builder()
+                .partidos(politicoRepository.findDistinctPartidos())
+                .regiones(politicoRepository.findDistinctRegiones())
+                .comisiones(politicoRepository.findDistinctComisiones())
+                .build();
+    }
+
+    public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int size, String nombre, String partido, String region, String comision) {
+        org.springframework.data.jpa.domain.Specification<Politico> spec = org.springframework.data.jpa.domain.Specification.where((Specification<Politico>) null);
+        
+        if (nombre != null && !nombre.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("nombreCompleto")), "%" + nombre.toLowerCase() + "%"));
+        }
+        if (partido != null && !partido.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("partidoPolitico"), partido));
+        }
+        if (region != null && !region.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("region"), region));
+        }
+        if (comision != null && !comision.isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("comision"), comision));
+        }
+
+        org.springframework.data.domain.Page<Politico> page = politicoRepository.findAll(spec, org.springframework.data.domain.PageRequest.of(pagina - 1, size));
+        
+        List<CartaPoliticoDTO> cartas = page.getContent().stream()
+                .map(this::mapToCartaDTO)
+                .collect(Collectors.toList());
+
+        return com.controlf.dto.GrillaPoliticosDTO.builder()
+                .id("grilla-politicos")
+                .cartas(cartas)
+                .paginaActual(pagina)
+                .totalPaginas(page.getTotalPages())
+                .build();
+    }
+
+    public List<CartaPoliticoDTO> getAllPoliticosAsCartas() {
+        return politicoRepository.findAll().stream()
+                .map(this::mapToCartaDTO)
+                .collect(Collectors.toList());
+    }
+
+    public void addComentario(Integer politicoId, ComentarioRequestDTO request) {
+        Politico p = politicoRepository.findById(politicoId).orElseThrow();
+        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+
+        Comentario c = new Comentario();
+        c.setTexto(request.getTexto());
+        c.setUsuario(u);
+        c.setFecha(LocalDateTime.now());
+        c.setEsBasadoEnHechos(false);
+        
+        comentarioRepository.save(c);
+        p.getComentarios().add(c);
+        politicoRepository.save(p);
+    }
+
+    public void addCalificacion(Integer politicoId, CalificacionRequestDTO request) {
+        Politico p = politicoRepository.findById(politicoId).orElseThrow();
+        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+
+        Calificacion cal = new Calificacion();
+        cal.setPuntaje(request.getPuntaje());
+        cal.setUsuario(u);
+        cal.setFecha(LocalDateTime.now());
+
+        calificacionRepository.save(cal);
+        p.getCalificaciones().add(cal);
+        politicoRepository.save(p);
+    }
+
+    private CartaPoliticoDTO mapToCartaDTO(Politico p) {
+        Double coherencia = vinculoRepository.findAverageCoherenciaByPoliticoId(p.getId());
+        long proyectos = leyRepository.countByProponente(p.getNombreCompleto());
+
+        return CartaPoliticoDTO.builder()
+                .id(p.getId().toString())
+                .nombre(p.getNombreCompleto())
+                .organizacion(p.getPartidoPolitico())
+                .fotoUrl(p.getFotoUrl())
+                .estaActivo(p.getEstaActivo())
+                .porcentajeCoherencia(coherencia != null ? coherencia : 0.0)
+                .cantidadProyectos(proyectos)
+                .estadoEtiqueta(determineEstadoEtiqueta(coherencia))
+                .build();
+    }
+
+    private String determineEstadoEtiqueta(Double coherencia) {
+        if (coherencia == null) return "SIN DATOS";
+        
+        double alta = getThreshold("UMBRAL_COHERENCIA_ALTA", 70.0);
+        double media = getThreshold("UMBRAL_COHERENCIA_MEDIA", 40.0);
+
+        if (coherencia >= alta) return "COHERENTE";
+        if (coherencia >= media) return "AMBIGUO";
+        return "INCOHERENTE";
+    }
+
+    private double getThreshold(String clave, double defaultValue) {
+        return configuracionRepository.findById(clave)
+                .map(c -> Double.parseDouble(c.getValor()))
+                .orElse(defaultValue);
+    }
+}

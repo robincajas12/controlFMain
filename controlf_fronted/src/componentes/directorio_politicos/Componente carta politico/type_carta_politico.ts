@@ -1,3 +1,13 @@
+/**
+ * Endpoints:
+ * - GET  /api/politicos
+ * 
+ * - POST /api/politicos/{id}/comentarios
+ *   Body: { "texto": string, "usuarioId": number }
+ * 
+ * - POST /api/politicos/{id}/calificaciones
+ *   Body: { "puntaje": number, "usuarioId": number }
+ */
 interface CartaPolitico {
   id: string;                    // Identificador único del político
   nombre: string;                // Nombre completo

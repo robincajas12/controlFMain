@@ -1,43 +1,68 @@
 package com.controlf.db.schema;
 
-import java.time.LocalDate;
 import com.controlf.db.schema.enums.EstadoLey;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.time.LocalDate;
+import java.util.List;
 
+@Entity
+@Table(name = "leyes")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Ley {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
+    @Column(nullable = false)
     private String titulo;
+
+    @Column(nullable = false, unique = true)
     private String codigo;
+
     private String tipoExpediente;
     private String proponente;
+
+    @Column(columnDefinition = "TEXT")
     private String descripcionOriginal;
+
+    @Column(columnDefinition = "TEXT")
     private String descripcionSimplificada;
+
+    @Column(columnDefinition = "TEXT")
     private String impactoSocial;
+
     private String categoria;
+
+    @Enumerated(EnumType.STRING)
     private EstadoLey estado;
+
     private LocalDate fechaIngreso;
 
-    /* 
+    @OneToMany(mappedBy = "ley", cascade = CascadeType.ALL)
+    private List<Voto> votos;
 
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+        name = "ley_comentarios",
+        joinColumns = @JoinColumn(name = "ley_id"),
+        inverseJoinColumns = @JoinColumn(name = "comentario_id")
+    )
+    private List<Comentario> comentarios;
 
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+        name = "ley_calificaciones",
+        joinColumns = @JoinColumn(name = "ley_id"),
+        inverseJoinColumns = @JoinColumn(name = "calificacion_id")
+    )
+    private List<Calificacion> calificaciones;
 
-    public String getDescripcionOriginal() { return descripcionOriginal; }
-    public void setDescripcionOriginal(String descripcionOriginal) { this.descripcionOriginal = descripcionOriginal; }
-
-    public String getDescripcionSimplificada() { return descripcionSimplificada; }
-    public void setDescripcionSimplificada(String descripcionSimplificada) { this.descripcionSimplificada = descripcionSimplificada; }
-
-    public String getCategoria() { return categoria; }
-    public void setCategoria(String categoria) { this.categoria = categoria; }
-
-    public EstadoLey getEstado() { return estado; }
-    public void setEstado(EstadoLey estado) { this.estado = estado; }
-
-    public LocalDate getFechaIngreso() { return fechaIngreso; }
-    public void setFechaIngreso(LocalDate fechaIngreso) { this.fechaIngreso = fechaIngreso; }
-    */
+    @OneToMany(mappedBy = "ley", cascade = CascadeType.ALL)
+    private List<VinculoPromesaLey> vinculos;
 }

@@ -1,3 +1,24 @@
+/**
+ * Endpoint: GET /api/leyes/{id}/auditoria
+ * 
+ * Response Body:
+ * {
+ *   "id": string,
+ *   "titulo": string,
+ *   "subtitulo": string,
+ *   "filas": [
+ *     {
+ *       "id": string,
+ *       "nombre": string,
+ *       "fotoUrl": string,
+ *       "bloque": string,
+ *       "voto": string,
+ *       "analisisCoherencia": string,
+ *       "nivelCoherencia": "cumple" | "incumple" | "ambiguo"
+ *     }
+ *   ]
+ * }
+ */
 interface AuditoriaCoherencia {
   id: string;                  // Identificador único de la auditoría
   titulo: string;              // Título del componente
