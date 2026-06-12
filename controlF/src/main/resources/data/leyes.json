@@ -40,5 +40,33 @@
     "categoria": "Educación",
     "estado": "VETADA",
     "accionUrl": "/ley/LEY-2024-006"
+  },
+  {
+    "id": "LEY-2024-007",
+    "tituloLey": "Ley de Vivienda Asequible",
+    "categoria": "Vivienda",
+    "estado": "EN DEBATE",
+    "accionUrl": "/ley/LEY-2024-007"
+  },
+  {
+    "id": "LEY-2024-008",
+    "tituloLey": "Reforma Tributaria 2024",
+    "categoria": "Economía",
+    "estado": "APROBADA",
+    "accionUrl": "/ley/LEY-2024-008"
+  },
+  {
+    "id": "LEY-2024-009",
+    "tituloLey": "Ley de Ciberseguridad Nacional",
+    "categoria": "Seguridad",
+    "estado": "EN DEBATE",
+    "accionUrl": "/ley/LEY-2024-009"
+  },
+  {
+    "id": "LEY-2024-010",
+    "tituloLey": "Plan Nacional de Reforestación",
+    "categoria": "Ambiente",
+    "estado": "APROBADA",
+    "accionUrl": "/ley/LEY-2024-010"
   }
 ]
