@@ -9,15 +9,18 @@ import com.controlf.db.schema.Calificacion;
 import com.controlf.db.schema.Comentario;
 import com.controlf.db.schema.Ley;
 import com.controlf.db.schema.Usuario;
+import com.controlf.db.schema.Voto;
 import com.controlf.db.schema.enums.EstadoLey;
 import com.controlf.db.schema.enums.TipoVoto;
 import com.controlf.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,10 +36,7 @@ public class LeyService {
     private static final int CALIFICACION_MAXIMA = 5;
 
     public FiltrosLeyDTO getFiltros() {
-        return FiltrosLeyDTO.builder()
-                .categorias(leyRepository.findDistinctCategorias())
-                .estados(java.util.Arrays.stream(EstadoLey.values()).map(Enum::name).collect(Collectors.toList()))
-                .build();
+        return buildFiltrosLeyDTO();
     }
 
     public GrillaLeyesDTO getLeyesFiltradas(int pagina, int size, String termino, String categoria, String estado) {
@@ -63,7 +63,7 @@ public class LeyService {
             org.springframework.data.domain.Page<Ley> page = leyRepository.findAll(spec, org.springframework.data.domain.PageRequest.of(Math.max(0, pagina - 1), size));
 
             List<ExpedienteLegislativoDTO> leyes = page.getContent().stream()
-                    .map(this::mapToExpedienteDTO)
+                    .map(LeyService::mapToExpedienteDTO)
                     .collect(Collectors.toList());
 
             return GrillaLeyesDTO.builder()
@@ -93,13 +93,38 @@ public class LeyService {
 
     public List<ExpedienteLegislativoDTO> getAllLeyesAsExpedientes() {
         return leyRepository.findAll().stream()
-                .map(this::mapToExpedienteDTO)
+                .map(LeyService::mapToExpedienteDTO)
                 .collect(Collectors.toList());
     }
 
-    public void addComentario(Integer leyId, ComentarioRequestDTO request) {
+    @Transactional
+    public void actualizarCategoriaLey(Integer leyId, CategoriaLeyRequestDTO request) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
-        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+        ley.setCategoria(request.getCategoria());
+        leyRepository.save(ley);
+    }
+
+    @Transactional
+    public void actualizarEstadoLey(Integer leyId, EstadoLeyRequestDTO request) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        ley.setEstado(EstadoLey.valueOf(request.getEstado().toUpperCase(Locale.ROOT)));
+        leyRepository.save(ley);
+    }
+
+    @Transactional
+    public void actualizarAsistenciaVoto(Integer leyId, Integer votoId, AsistenciaVotoRequestDTO request) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        Voto voto = votoRepository.findById(votoId).orElseThrow();
+        if (!ley.getId().equals(voto.getLey().getId())) {
+            throw new IllegalArgumentException("El voto no pertenece a la ley indicada");
+        }
+        voto.setAsistencia(request.getAsistencia());
+        votoRepository.save(voto);
+    }
+
+    public void addComentario(Integer leyId, ComentarioRequestDTO request, Integer currentUserId) {
+        Ley ley = leyRepository.findById(leyId).orElseThrow();
+        Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
 
         Comentario c = new Comentario();
         c.setTexto(request.getTexto());
@@ -112,9 +137,9 @@ public class LeyService {
         leyRepository.save(ley);
     }
 
-    public void addCalificacion(Integer leyId, CalificacionRequestDTO request) {
+    public void addCalificacion(Integer leyId, CalificacionRequestDTO request, Integer currentUserId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
-        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+        Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
 
         Calificacion cal = new Calificacion();
         cal.setPuntaje(request.getPuntaje());
@@ -206,7 +231,31 @@ public class LeyService {
                 .build();
     }
 
-    private ExpedienteLegislativoDTO mapToExpedienteDTO(Ley ley) {
+    private FiltrosLeyDTO buildFiltrosLeyDTO() {
+        return FiltrosLeyDTO.builder()
+                .categorias(leyRepository.findDistinctCategorias())
+                .estados(java.util.Arrays.stream(EstadoLey.values()).map(estado -> estado.name()).collect(Collectors.toList()))
+                .build();
+    }
+
+    private String classifyLaw(String titulo, String descripcion) {
+        String combined = ((titulo == null ? "" : titulo) + " " + (descripcion == null ? "" : descripcion)).toLowerCase(Locale.ROOT);
+        if (combined.contains("educ") || combined.contains("escuela") || combined.contains("universidad")) {
+            return "EDUCACION";
+        }
+        if (combined.contains("salud") || combined.contains("hospital") || combined.contains("medic")) {
+            return "SALUD";
+        }
+        if (combined.contains("trabajo") || combined.contains("empleo") || combined.contains("labor")) {
+            return "TRABAJO";
+        }
+        if (combined.contains("seguridad") || combined.contains("polic") || combined.contains("delito")) {
+            return "SEGURIDAD";
+        }
+        return "GENERAL";
+    }
+
+    private static ExpedienteLegislativoDTO mapToExpedienteDTO(Ley ley) {
         return ExpedienteLegislativoDTO.builder()
                 .id(ley.getId().toString())
                 .codigoExpediente(ley.getCodigo())

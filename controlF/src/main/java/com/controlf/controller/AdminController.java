@@ -5,6 +5,7 @@ import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
 import com.controlf.dto.VinculoRequestDTO;
 import com.controlf.service.AdminService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -50,7 +51,7 @@ public class AdminController {
     }
 
     @PostMapping("/vinculos")
-    public void postVinculo(@RequestBody VinculoRequestDTO request) {
+    public void postVinculo(@Valid @RequestBody VinculoRequestDTO request) {
         adminService.crearVinculoCoherencia(request);
     }
 
@@ -62,6 +63,11 @@ public class AdminController {
     @PostMapping("/mantenimiento/limpiar-cache")
     public void postLimpiarCache() {
         adminService.limpiarCache();
+    }
+
+    @GetMapping("/historico")
+    public com.controlf.dto.ReporteHistoricoDTO getHistorico() {
+        return adminService.getHistoricoResumen();
     }
 
     @PostMapping("/importar-leyes")

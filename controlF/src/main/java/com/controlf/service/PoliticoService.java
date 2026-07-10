@@ -3,17 +3,30 @@ package com.controlf.service;
 import com.controlf.db.repository.*;
 import com.controlf.db.schema.Calificacion;
 import com.controlf.db.schema.Comentario;
+import com.controlf.db.schema.Politico;
+import com.controlf.db.schema.Promesa;
+import com.controlf.db.schema.Usuario;
+import com.controlf.dto.ActualizarCampoPoliticoRequestDTO;
 import com.controlf.dto.CalificacionRequestDTO;
 import com.controlf.dto.CartaPoliticoDTO;
 import com.controlf.dto.ComentarioRequestDTO;
-import com.controlf.db.schema.Politico;
-import com.controlf.db.schema.Usuario;
+import com.controlf.dto.PromesaDTO;
+import com.controlf.dto.PromesaRequestDTO;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,11 +35,12 @@ public class PoliticoService {
 
     private final PoliticoRepository politicoRepository;
     private final VinculoPromesaLeyRepository vinculoRepository;
-    private final LeyRepository leyRepository;
     private final ComentarioRepository comentarioRepository;
     private final CalificacionRepository calificacionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PromesaRepository promesaRepository;
     private final ConfiguracionRepository configuracionRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public com.controlf.dto.PerfilPoliticoDTO getPoliticoProfile(Integer id) {
         Politico p = politicoRepository.findById(id).orElseThrow();
@@ -88,6 +102,12 @@ public class PoliticoService {
         }
     }
 
+    public List<com.controlf.dto.SimpleItemDTO> getPoliticosImportables() {
+        return politicoRepository.findAll().stream()
+                .map(PoliticoService::mapToSimpleItemDTO)
+                .collect(Collectors.toList());
+    }
+
     public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int size, String nombre, String partido, String region, String comision) {
         try {
             org.springframework.data.jpa.domain.Specification<Politico> spec = (root, query, cb) -> cb.conjunction();
@@ -108,7 +128,7 @@ public class PoliticoService {
             org.springframework.data.domain.Page<Politico> page = politicoRepository.findAll(spec, org.springframework.data.domain.PageRequest.of(Math.max(0, pagina - 1), size));
             
             List<CartaPoliticoDTO> cartas = page.getContent().stream()
-                    .map(this::mapToCartaDTO)
+                    .map(PoliticoService::mapToCartaDTO)
                     .collect(Collectors.toList());
 
             return com.controlf.dto.GrillaPoliticosDTO.builder()
@@ -130,13 +150,37 @@ public class PoliticoService {
 
     public List<CartaPoliticoDTO> getAllPoliticosAsCartas() {
         return politicoRepository.findAll().stream()
-                .map(this::mapToCartaDTO)
+                .map(PoliticoService::mapToCartaDTO)
                 .collect(Collectors.toList());
     }
 
-    public void addComentario(Integer politicoId, ComentarioRequestDTO request) {
+    @Transactional
+    public void actualizarCampoPolitico(Integer politicoId, ActualizarCampoPoliticoRequestDTO request) {
         Politico p = politicoRepository.findById(politicoId).orElseThrow();
-        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+
+        String campo = request.getCampo() == null ? "" : request.getCampo().trim().toLowerCase();
+        String valor = request.getValor();
+
+        String valorAnterior = null;
+        switch (campo) {
+            case "patrimonio" -> {
+                valorAnterior = p.getPatrimonioDeclarado() == null ? null : p.getPatrimonioDeclarado().toPlainString();
+                p.setPatrimonioDeclarado(new BigDecimal(valor));
+            }
+            case "antecedentes" -> {
+                valorAnterior = p.getAntecedentes();
+                p.setAntecedentes(valor);
+            }
+            default -> throw new IllegalArgumentException("Campo no soportado: " + campo);
+        }
+
+        p.setHistorialActualizaciones(appendHistorialEntry(p.getHistorialActualizaciones(), campo, valorAnterior, valor));
+        politicoRepository.save(p);
+    }
+
+    public void addComentario(Integer politicoId, ComentarioRequestDTO request, Integer currentUserId) {
+        Politico p = politicoRepository.findById(politicoId).orElseThrow();
+        Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
 
         Comentario c = new Comentario();
         c.setTexto(request.getTexto());
@@ -149,9 +193,9 @@ public class PoliticoService {
         politicoRepository.save(p);
     }
 
-    public void addCalificacion(Integer politicoId, CalificacionRequestDTO request) {
+    public void addCalificacion(Integer politicoId, CalificacionRequestDTO request, Integer currentUserId) {
         Politico p = politicoRepository.findById(politicoId).orElseThrow();
-        Usuario u = usuarioRepository.findById(request.getUsuarioId()).orElseThrow();
+        Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
 
         Calificacion cal = new Calificacion();
         cal.setPuntaje(request.getPuntaje());
@@ -163,10 +207,49 @@ public class PoliticoService {
         politicoRepository.save(p);
     }
 
-    private CartaPoliticoDTO mapToCartaDTO(Politico p) {
-        Double coherencia = vinculoRepository.findAverageCoherenciaByPoliticoId(p.getId());
-        long proyectos = leyRepository.countByProponente(p.getNombreCompleto());
+    @Transactional
+    public PromesaDTO crearPromesa(Integer politicoId, PromesaRequestDTO request) {
+        Politico politico = politicoRepository.findById(politicoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Político no encontrado"));
 
+        Promesa promesa = new Promesa();
+        promesa.setDescripcion(request.getDescripcion());
+        promesa.setCategoria(request.getCategoria());
+        promesa.setFechaCreacion(LocalDate.now());
+        promesa.setPolitico(politico);
+
+        Promesa saved = promesaRepository.save(promesa);
+        if (politico.getPromesas() == null) {
+            politico.setPromesas(new ArrayList<>());
+        }
+        politico.getPromesas().add(saved);
+        politicoRepository.save(politico);
+
+        return mapToPromesaDTO(saved);
+    }
+
+    public List<PromesaDTO> listarPromesasPorPolitico(Integer politicoId) {
+        if (!politicoRepository.existsById(politicoId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Político no encontrado");
+        }
+        return promesaRepository.findByPoliticoId(politicoId).stream()
+                .map(this::mapToPromesaDTO)
+                .collect(Collectors.toList());
+    }
+
+    private PromesaDTO mapToPromesaDTO(Promesa promesa) {
+        return PromesaDTO.builder()
+                .id(promesa.getId())
+                .descripcion(promesa.getDescripcion())
+                .categoria(promesa.getCategoria())
+                .fechaCreacion(promesa.getFechaCreacion())
+                .politicoId(promesa.getPolitico() != null ? promesa.getPolitico().getId() : null)
+                .build();
+    }
+
+    private static CartaPoliticoDTO mapToCartaDTO(Politico p) {
+        Double coherencia = null;
+        long proyectos = 0L;
         return CartaPoliticoDTO.builder()
                 .id(p.getId().toString())
                 .nombre(p.getNombreCompleto())
@@ -175,8 +258,39 @@ public class PoliticoService {
                 .estaActivo(p.getEstaActivo())
                 .porcentajeCoherencia(coherencia != null ? coherencia : 0.0)
                 .cantidadProyectos(proyectos)
-                .estadoEtiqueta(determineEstadoEtiqueta(coherencia))
+                .estadoEtiqueta("SIN DATOS")
                 .build();
+    }
+
+    private static com.controlf.dto.SimpleItemDTO mapToSimpleItemDTO(Politico p) {
+        return com.controlf.dto.SimpleItemDTO.builder()
+                .id(p.getId().toString())
+                .label(p.getNombreCompleto())
+                .build();
+    }
+
+    private String appendHistorialEntry(String currentJson, String campo, String valorAnterior, String valorNuevo) {
+        List<Map<String, Object>> entries = new ArrayList<>();
+        if (currentJson != null && !currentJson.isBlank()) {
+            try {
+                entries = objectMapper.readValue(currentJson, new TypeReference<>() {});
+            } catch (Exception ignored) {
+                entries = new ArrayList<>();
+            }
+        }
+
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("fecha", LocalDateTime.now().toString());
+        entry.put("campo", campo);
+        entry.put("valorAnterior", valorAnterior);
+        entry.put("valorNuevo", valorNuevo);
+        entries.add(entry);
+
+        try {
+            return objectMapper.writeValueAsString(entries);
+        } catch (Exception e) {
+            return currentJson;
+        }
     }
 
     private String determineEstadoEtiqueta(Double coherencia) {

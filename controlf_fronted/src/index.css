@@ -15,3 +15,29 @@
     font-family: 'Inter', system-ui, sans-serif;
   }
 }
+
+/* Oleaje: la capa base barre en horizontal mientras el resplandor
+   inferior sube y baja, como el vaivén de un mar en calma. */
+@keyframes loginWaves {
+  0%   { background-position: 0% 50%,   50% 100%; }
+  25%  { background-position: 50% 45%,  40% 85%; }
+  50%  { background-position: 100% 55%, 60% 100%; }
+  75%  { background-position: 50% 45%,  40% 85%; }
+  100% { background-position: 0% 50%,   50% 100%; }
+}
+
+/* Fondo degradado animado del login: morados que se funden con el color
+   de la barra superior (primary-navy #1e293b) en un oleaje suave */
+.login-animated-bg {
+  background:
+    linear-gradient(-45deg, #2e1065, #6d28d9, #7c3aed, #4338ca, #1e293b),
+    radial-gradient(150% 70% at 50% 120%, rgba(139, 92, 246, 0.5), transparent 70%);
+  background-size: 300% 300%, 200% 180%;
+  animation: loginWaves 14s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-animated-bg {
+    animation: none;
+  }
+}

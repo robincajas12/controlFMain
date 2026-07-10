@@ -22,7 +22,7 @@ public class Promesa {
     private String descripcion;
 
     private String categoria;
-    private LocalDate fechaPromesa;
+    private LocalDate fechaCreacion;
 
     @ManyToOne
     @JoinColumn(name = "politico_id", nullable = false)

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { type ComentarioDebate } from './type_perfil_politico';
 
 interface ParticipacionCiudadanaProps {
@@ -9,6 +11,7 @@ interface ParticipacionCiudadanaProps {
 const ParticipacionCiudadana: React.FC<ParticipacionCiudadanaProps> = ({ comentarios, onAddComentario }) => {
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [puntaje, setPuntaje] = useState(0);
+  const { isAuthenticated } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +34,12 @@ const ParticipacionCiudadana: React.FC<ParticipacionCiudadanaProps> = ({ comenta
         <div className="space-y-6">
           <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
             <h5 className="text-sm font-bold text-slate-700 mb-4">Califica a este político</h5>
+            {!isAuthenticated ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                Inicia sesión para publicar comentarios y calificaciones. <Link to="/login" className="font-semibold text-accent-blue">Entrar ahora</Link>
+              </div>
+            ) : (
+              <>
             <div className="flex gap-4 mb-6">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -65,6 +74,8 @@ const ParticipacionCiudadana: React.FC<ParticipacionCiudadanaProps> = ({ comenta
                 Publicar Comentario
               </button>
             </form>
+            </>
+            )}
           </div>
         </div>
 

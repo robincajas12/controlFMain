@@ -1,17 +1,9 @@
 package com.controlf;
 
-import com.controlf.service.DataSeederService;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 
-@SpringBootApplication(excludeName = {
-    "org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration",
-    "org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration",
-    "org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration",
-    "org.springframework.boot.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration"
-})
+@SpringBootApplication
 public class ControlFApplication {
     public static void main(String[] args) {
         SpringApplication.run(ControlFApplication.class, args);
