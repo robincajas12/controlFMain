@@ -30,6 +30,15 @@ interface ImportResult {
   duplicates: number;
 }
 
+interface HistoricoData {
+  totalLeyes: number;
+  totalVotos: number;
+  votosFavor: number;
+  votosContra: number;
+  leyesAprobadas: number;
+  leyesEnDebate: number;
+}
+
 interface AdminSecurityData {
   tituloSeccion: string;
   opciones: PanelOption[];
@@ -65,14 +74,24 @@ const AdminPage: React.FC = () => {
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [memberSearch, setMemberSearch] = useState('');
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
+  const [showPoliticoDropdown, setShowPoliticoDropdown] = useState(false);
   const [votings, setVotings] = useState<VotingItem[]>([]);
   const [selectedVotingIds, setSelectedVotingIds] = useState<number[]>([]);
   const [isLoadingMembers, setIsLoadingMembers] = useState(true);
   const [isLoadingVotings, setIsLoadingVotings] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [historico, setHistorico] = useState<HistoricoData | null>(null);
+  const [importablePoliticos, setImportablePoliticos] = useState<{ id: string; label: string }[]>([]);
+  const [politicoSearch, setPoliticoSearch] = useState('');
+  const [selectedPoliticoIds, setSelectedPoliticoIds] = useState<string[]>([]);
+  const [politicoImportResult, setPoliticoImportResult] = useState<ImportResult | null>(null);
+  const [politicoSyncResult, setPoliticoSyncResult] = useState<ImportResult | null>(null);
+  const [isSyncingPoliticos, setIsSyncingPoliticos] = useState(false);
+  const [isImportingPoliticos, setIsImportingPoliticos] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const politicoDropdownRef = useRef<HTMLDivElement>(null);
+  const { apiFetch } = useAuth();
   const ITEMS_PER_PAGE = 20;
 
   const fetchData = async () => {
@@ -84,13 +103,15 @@ const AdminPage: React.FC = () => {
         apiFetch('/api/admin/historico')
       ]);
 
-      const [securityData, maintenanceData] = await Promise.all([
+      const [securityData, maintenanceData, historicoData] = await Promise.all([
         segRes.ok ? (segRes.json() as Promise<AdminSecurityData>) : Promise.resolve<AdminSecurityData | null>(null),
-        mantRes.ok ? (mantRes.json() as Promise<AdminMaintenanceData>) : Promise.resolve<AdminMaintenanceData | null>(null)
+        mantRes.ok ? (mantRes.json() as Promise<AdminMaintenanceData>) : Promise.resolve<AdminMaintenanceData | null>(null),
+        historicoRes.ok ? (historicoRes.json() as Promise<HistoricoData>) : Promise.resolve<HistoricoData | null>(null)
       ]);
 
       setSeguridad(securityData);
       setMantenimiento(maintenanceData);
+      setHistorico(historicoData);
     } catch (error) {
       console.error('Error al cargar datos administrativos:', error);
       setSeguridad(null);
@@ -131,8 +152,8 @@ const AdminPage: React.FC = () => {
 
       try {
         const [segRes, mantRes] = await Promise.all([
-          fetch('/api/admin/panel'),
-          fetch('/api/admin/mantenimiento')
+          apiFetch('/api/admin/panel'),
+          apiFetch('/api/admin/mantenimiento')
         ]);
 
         if (!isMounted) return;
@@ -160,7 +181,7 @@ const AdminPage: React.FC = () => {
     const loadAssemblyMembers = async () => {
       try {
         setIsLoadingMembers(true);
-        const response = await fetch('/admin/assembly-members');
+        const response = await apiFetch('/api/admin/assembly-members');
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -189,11 +210,12 @@ const AdminPage: React.FC = () => {
 
     void loadInitialData();
     void loadAssemblyMembers();
+    void loadImportablePoliticos();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [apiFetch]);
 
   const handleAccionMantenimiento = async (accion: string) => {
     let endpoint = '';
@@ -253,7 +275,7 @@ const AdminPage: React.FC = () => {
 
     try {
       setIsLoadingVotings(true);
-      const response = await fetch(`/admin/assembly-members/${memberId}/votings`);
+      const response = await apiFetch(`/api/admin/assembly-members/${memberId}/votings`);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -299,13 +321,34 @@ const AdminPage: React.FC = () => {
     try {
       setIsSyncingPoliticos(true);
       const response = await apiFetch('/api/admin/import-politicos', { method: 'POST' });
-      const data = await response.json();
-      setPoliticoSyncResult(data);
+      const data = await response.json().catch(() => null);
+      setPoliticoSyncResult((data as ImportResult | null) ?? null);
       await loadImportablePoliticos();
     } catch (error) {
       console.error('Error al sincronizar políticos:', error);
     } finally {
       setIsSyncingPoliticos(false);
+    }
+  };
+
+  const handleImportLeyesPorPoliticos = async () => {
+    if (selectedPoliticoIds.length === 0) return;
+
+    try {
+      setIsImportingPoliticos(true);
+      const response = await apiFetch('/api/admin/import-leyes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ politicoIds: selectedPoliticoIds.map((id) => Number(id)) })
+      });
+      const data = await response.json().catch(() => null);
+      setPoliticoImportResult((data as ImportResult | null) ?? null);
+    } catch (error) {
+      console.error('Error al importar leyes por candidato:', error);
+    } finally {
+      setIsImportingPoliticos(false);
     }
   };
 
@@ -346,7 +389,7 @@ const AdminPage: React.FC = () => {
 
     try {
       setIsImporting(true);
-      const response = await apiFetch(`/admin/import-votings/${selectedMemberId}/selected`, {
+      const response = await apiFetch(`/api/admin/import-votings/${selectedMemberId}/selected`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

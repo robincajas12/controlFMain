@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/admin")
+@RequestMapping({"/admin", "/api/admin"})
 @RequiredArgsConstructor
+@CrossOrigin("*")
 public class AssemblyImportController {
 
     private final AssemblyImportService assemblyImportService;

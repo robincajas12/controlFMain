@@ -43,4 +43,22 @@ public class DashboardService {
                 .actividadReciente(actividad)
                 .build();
     }
+
+    public String exportStatsCsv() {
+        DashboardStatsDTO stats = getStats();
+        StringBuilder csv = new StringBuilder();
+        csv.append("Métrica,Valor\n");
+        csv.append("Total Políticos,").append(stats.getTotalPoliticos()).append("\n");
+        csv.append("Total Leyes,").append(stats.getTotalLeyes()).append("\n");
+        csv.append("Promedio Coherencia Global,").append(stats.getPromedioCoherenciaGlobal()).append("\n");
+        csv.append("Total Comentarios,").append(stats.getTotalComentarios()).append("\n");
+        csv.append("Actividad Reciente,\n");
+        for (RecentActivityDTO activity : stats.getActividadReciente()) {
+            csv.append('"').append(activity.getTipo()).append(" - ")
+                    .append(activity.getUsuario()).append(" - ")
+                    .append(activity.getDetalle()).append('"')
+                    .append(',').append(activity.getFecha()).append("\n");
+        }
+        return csv.toString();
+    }
 }

@@ -51,7 +51,7 @@ public class AssemblyImportService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public List<AssemblyMemberDTO> getAssemblyMembers() {
-        String url = BASE_URL + "/assembly?idType=1&onlyActive=false&idPeriod=8&idTerritorial=";
+        String url = "https://datos.asambleanacional.gob.ec/ecurul/assemblyman/assembly?idType=1&onlyActive=false&idPeriod=&idTerritorial=";
         ResponseEntity<List<AssemblyMemberDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null, new ParameterizedTypeReference<>() {}
         );
@@ -123,13 +123,32 @@ return objectMapper.readValue(response.body(),
                 if (selectedIds != null && !selectedIds.contains(v.getId())) {
                     continue;
                 }
+                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
                 if (leyRepository.existsByExternalId(v.getId())) {
+                    Ley existingLaw = leyRepository.findByExternalId(v.getId()).orElse(null);
+                    if (existingLaw != null) {
+                        if (votoRepository.existsByPoliticoIdAndLeyId(politico.getId(), existingLaw.getId())) {
+                            duplicates++;
+                            log.debug("Voto duplicado omitido politico={} external_id={}", politico.getNombreCompleto(), v.getId());
+                            continue;
+                        }
+
+                        Voto voto = new Voto();
+                        voto.setPolitico(politico);
+                        voto.setLey(existingLaw);
+                        voto.setTipoVoto(mapVote(v.getDescription()));
+                        voto.setAsistencia(true);
+                        voto.setFechaVoto(ldt);
+                        votoRepository.save(voto);
+
+                        imported++;
+                        log.debug("Voto agregado a ley existente external_id={} politico={}", v.getId(), politico.getNombreCompleto());
+                        continue;
+                    }
                     duplicates++;
                     log.debug("Duplicado omitido external_id={}", v.getId());
                     continue;
                 }
-
-                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
 
                 Ley ley = new Ley();
                 ley.setTitulo(truncate(v.getProposalDescription(), 255));
@@ -234,13 +253,32 @@ return objectMapper.readValue(response.body(),
                     log.debug("Votación ignorada (irrelevante): {}", v.getProposalDescription());
                     continue;
                 }
+                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
                 if (leyRepository.existsByExternalId(v.getId())) {
+                    Ley existingLaw = leyRepository.findByExternalId(v.getId()).orElse(null);
+                    if (existingLaw != null) {
+                        if (votoRepository.existsByPoliticoIdAndLeyId(politico.getId(), existingLaw.getId())) {
+                            duplicates++;
+                            log.debug("Voto duplicado omitido politico={} external_id={}", politico.getNombreCompleto(), v.getId());
+                            continue;
+                        }
+
+                        Voto voto = new Voto();
+                        voto.setPolitico(politico);
+                        voto.setLey(existingLaw);
+                        voto.setTipoVoto(mapVote(v.getDescription()));
+                        voto.setAsistencia(true);
+                        voto.setFechaVoto(ldt);
+                        votoRepository.save(voto);
+
+                        imported++;
+                        log.debug("Voto agregado a ley existente external_id={} politico={}", v.getId(), politico.getNombreCompleto());
+                        continue;
+                    }
                     duplicates++;
                     log.debug("Duplicado omitido external_id={}", v.getId());
                     continue;
                 }
-
-                LocalDateTime ldt = LocalDateTime.parse(v.getVotingDate(), fmt);
 
                 Ley ley = new Ley();
                 ley.setTitulo(truncate(v.getProposalDescription(), 255));

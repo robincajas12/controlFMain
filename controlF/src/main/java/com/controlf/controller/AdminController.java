@@ -1,5 +1,6 @@
 package com.controlf.controller;
 
+import com.controlf.dto.CrearPoliticoRequestDTO;
 import com.controlf.dto.CrearPromesaRequestDTO;
 import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
@@ -40,6 +41,16 @@ public class AdminController {
         adminService.crearPromesa(request);
     }
 
+    @PostMapping("/politicos")
+    public void crearPolitico(@RequestBody CrearPoliticoRequestDTO request) {
+        adminService.crearPolitico(request);
+    }
+
+    @DeleteMapping("/politicos/{id}")
+    public void eliminarPolitico(@PathVariable Integer id) {
+        adminService.eliminarPolitico(id);
+    }
+
     @GetMapping("/panel")
     public PanelControlDTO getPanel() {
         return adminService.getSecurityPanel();
@@ -73,5 +84,10 @@ public class AdminController {
     @PostMapping("/importar-leyes")
     public void postImportarLeyes() {
         adminService.importarLeyes();
+    }
+
+    @PostMapping("/normalizar-leyes")
+    public com.controlf.dto.LeyNormalizacionResultDTO postNormalizarLeyes() {
+        return adminService.normalizarLeyes();
     }
 }

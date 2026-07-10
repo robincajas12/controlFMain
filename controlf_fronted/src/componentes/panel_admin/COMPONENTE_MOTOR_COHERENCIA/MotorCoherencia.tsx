@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 
 interface SimpleItem {
   id: string;
@@ -6,6 +7,7 @@ interface SimpleItem {
 }
 
 const MotorCoherencia: React.FC = () => {
+  const { apiFetch } = useAuth();
   const [politicos, setPoliticos] = useState<SimpleItem[]>([]);
   const [leyes, setLeyes] = useState<SimpleItem[]>([]);
   const [promesas, setPromesas] = useState<SimpleItem[]>([]);
@@ -20,29 +22,53 @@ const MotorCoherencia: React.FC = () => {
   const [nuevaPromesaFecha, setNuevaPromesaFecha] = useState('');
 
   useEffect(() => {
-    fetch('/api/admin/motor/data')
-      .then(res => res.json())
-      .then(data => {
-        setPoliticos(data.politicos);
-        setLeyes(data.leyes);
-      });
-  }, []);
+    const loadMotorData = async () => {
+      try {
+        const response = await apiFetch('/api/admin/motor/data');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json().catch(() => null);
+        if (data) {
+          setPoliticos(data.politicos ?? []);
+          setLeyes(data.leyes ?? []);
+        }
+      } catch (error) {
+        console.error('Error al cargar datos del motor de coherencia:', error);
+      }
+    };
+
+    void loadMotorData();
+  }, [apiFetch]);
 
   useEffect(() => {
-    if (selectedPolitico) {
-      fetch(`/api/admin/politicos/${selectedPolitico}/promesas`)
-        .then(res => res.json())
-        .then(data => setPromesas(data));
-    } else {
-      setPromesas([]);
-    }
-  }, [selectedPolitico]);
+    const loadPromesas = async () => {
+      if (!selectedPolitico) {
+        setPromesas([]);
+        return;
+      }
+
+      try {
+        const response = await apiFetch(`/api/admin/politicos/${selectedPolitico}/promesas`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json().catch(() => null);
+        setPromesas(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error al cargar promesas del político:', error);
+        setPromesas([]);
+      }
+    };
+
+    void loadPromesas();
+  }, [apiFetch, selectedPolitico]);
 
   const handleGenerarVinculo = async () => {
     if (!selectedPromesa || !selectedLey) return;
 
     try {
-      await fetch('/api/admin/vinculos', {
+      await apiFetch('/api/admin/vinculos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,7 +90,7 @@ const MotorCoherencia: React.FC = () => {
     if (!selectedPolitico || !nuevaPromesaDescripcion.trim()) return;
 
     try {
-      const response = await fetch('/api/admin/promesas', {
+      const response = await apiFetch('/api/admin/promesas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -83,9 +109,9 @@ const MotorCoherencia: React.FC = () => {
       setNuevaPromesaDescripcion('');
       setNuevaPromesaCategoria('');
       setNuevaPromesaFecha('');
-      fetch(`/api/admin/politicos/${selectedPolitico}/promesas`)
-        .then(res => res.json())
-        .then(data => setPromesas(data));
+      const promesasResponse = await apiFetch(`/api/admin/politicos/${selectedPolitico}/promesas`);
+      const promesasData = await promesasResponse.json().catch(() => null);
+      setPromesas(Array.isArray(promesasData) ? promesasData : []);
     } catch (error) {
       console.error('Error al crear promesa:', error);
       alert('Error al crear la promesa');

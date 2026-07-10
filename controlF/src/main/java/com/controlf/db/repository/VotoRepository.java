@@ -10,6 +10,7 @@ import java.util.List;
 public interface VotoRepository extends JpaRepository<Voto, Integer> {
     List<Voto> findByLeyId(Integer leyId);
     List<Voto> findByPoliticoId(Integer politicoId);
+    boolean existsByPoliticoIdAndLeyId(Integer politicoId, Integer leyId);
 
     long countByLeyIdAndTipoVoto(Integer leyId, TipoVoto tipoVoto);
     long countByTipoVoto(TipoVoto tipoVoto);

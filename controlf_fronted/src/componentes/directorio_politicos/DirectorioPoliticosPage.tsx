@@ -80,6 +80,27 @@ const DirectorioPoliticosPage: React.FC = () => {
     fetchPoliticos(1);
   };
 
+  const handleExportarReporte = async () => {
+    try {
+      const response = await fetch('/api/dashboard/export');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const csv = await response.text();
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `reporte-politicos-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error al exportar reporte:', error);
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto">
       <BarraBusqueda
@@ -88,9 +109,11 @@ const DirectorioPoliticosPage: React.FC = () => {
         filtros={filtros}
         textoBusqueda={busqueda}
         placeholderBusqueda="Buscar por nombre del político..."
+        textoBotonExportar="Exportar Reporte"
         onSearchChange={handleSearchChange}
         onFilterChange={handleFilterChange}
         onSearchSubmit={handleSearchSubmit}
+        onExport={handleExportarReporte}
       />
 
       <GrillaPoliticos

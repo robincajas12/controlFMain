@@ -13,9 +13,11 @@ interface BarraBusquedaProps {
   filtros: FiltroBusqueda[];
   textoBusqueda: string;
   placeholderBusqueda: string;
+  textoBotonExportar: string;
   onSearchChange: (value: string) => void;
   onFilterChange: (id: string, value: string) => void;
   onSearchSubmit: () => void;
+  onExport: () => void;
 }
 
 const BarraBusqueda: React.FC<BarraBusquedaProps> = ({
@@ -24,9 +26,11 @@ const BarraBusqueda: React.FC<BarraBusquedaProps> = ({
   filtros,
   textoBusqueda,
   placeholderBusqueda,
+  textoBotonExportar,
   onSearchChange,
   onFilterChange,
-  onSearchSubmit
+  onSearchSubmit,
+  onExport
 }) => {
   return (
     <div className="mb-8">
@@ -35,9 +39,12 @@ const BarraBusqueda: React.FC<BarraBusquedaProps> = ({
           <h2 className="text-2xl font-bold text-primary-navy">{titulo}</h2>
           <p className="text-slate-500">{subtitulo}</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
+        <button
+          onClick={onExport}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Exportar Reporte
+          {textoBotonExportar}
         </button>
       </div>
 

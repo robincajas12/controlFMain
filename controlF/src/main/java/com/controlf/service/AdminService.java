@@ -4,7 +4,10 @@ import com.controlf.db.repository.*;
 import com.controlf.db.schema.*;
 import com.controlf.db.schema.enums.ImpactoEsperado;
 import com.controlf.db.schema.enums.NivelCoherencia;
+import com.controlf.dto.CrearPoliticoRequestDTO;
 import com.controlf.dto.CrearPromesaRequestDTO;
+import com.controlf.dto.ImportResultDTO;
+import com.controlf.dto.LeyNormalizacionResultDTO;
 import com.controlf.dto.PanelControlDTO;
 import com.controlf.dto.PanelMantenimientoDTO;
 import com.controlf.dto.ReporteHistoricoDTO;
@@ -13,11 +16,13 @@ import com.controlf.dto.MotorCoherenciaDataDTO;
 import com.controlf.dto.SimpleItemDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.lang.management.ManagementFactory;
 import com.sun.management.OperatingSystemMXBean;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -36,6 +41,7 @@ public class AdminService {
     private final VinculoPromesaLeyRepository vinculoRepository;
     private final UsuarioRepository usuarioRepository;
     private final PoliticoRepository politicoRepository;
+    private final AssemblyImportService assemblyImportService;
     private final VotoRepository votoRepository;
 
     public MotorCoherenciaDataDTO getMotorData() {
@@ -65,7 +71,7 @@ public class AdminService {
         Promesa promesa = new Promesa();
         promesa.setDescripcion(request.getDescripcion());
         promesa.setCategoria(request.getCategoria());
-        promesa.setFechaPromesa(request.getFechaPromesa());
+        promesa.setFechaCreacion(LocalDate.now());
         promesa.setPolitico(politico);
         promesa.setVinculos(List.of());
 
@@ -97,7 +103,105 @@ public class AdminService {
     }
 
     public void importarLeyes() {
-        registrarLog("IMPORT_LEYES", "Sincronización con API externa iniciada");
+        var politicoIds = politicoRepository.findAll().stream()
+                .map(Politico::getId)
+                .collect(Collectors.toList());
+
+        if (politicoIds.isEmpty()) {
+            registrarLog("IMPORT_LEYES", "No se encontraron políticos para importar leyes");
+            return;
+        }
+
+        ImportResultDTO result = assemblyImportService.importLeyesForPoliticos(politicoIds);
+        registrarLog("IMPORT_LEYES", String.format("Sincronización con API externa finalizada: importadas=%d, duplicadas=%d, ignoradas=%d", result.getImported(), result.getDuplicates(), result.getIgnored()));
+    }
+
+    @Transactional
+    public LeyNormalizacionResultDTO normalizarLeyes() {
+        List<Ley> leyes = leyRepository.findAll();
+        int actualizadas = 0;
+        int sinCambios = 0;
+
+        for (Ley ley : leyes) {
+            String original = ley.getDescripcionOriginal();
+            String normalizada = normalizeLegislativeText(original);
+            if (normalizada == null) {
+                normalizada = "No hay descripción disponible.";
+            }
+            ley.setDescripcionSimplificada(normalizada);
+            if (original != null && original.equals(normalizada)) {
+                sinCambios++;
+            } else {
+                actualizadas++;
+            }
+        }
+        leyRepository.saveAll(leyes);
+        registrarLog("NORMALIZAR_LEYES", "Se normalizó el lenguaje legislativo de " + leyes.size() + " leyes");
+
+        return LeyNormalizacionResultDTO.builder()
+                .totalLeyes(leyes.size())
+                .leyesActualizadas(actualizadas)
+                .leyesSinCambios(sinCambios)
+                .build();
+    }
+
+    @Transactional
+    public void crearPolitico(CrearPoliticoRequestDTO request) {
+        Politico politico = new Politico();
+        politico.setNombreCompleto(request.getNombreCompleto());
+        politico.setPartidoPolitico(request.getPartidoPolitico());
+        politico.setCargoActual(request.getCargoActual());
+        politico.setRegion(request.getRegion());
+        politico.setComision(request.getComision());
+        politico.setEstaActivo(request.getEstaActivo() != null ? request.getEstaActivo() : true);
+        politico.setPatrimonioDeclarado(request.getPatrimonioDeclarado());
+        politico.setAntecedentes(request.getAntecedentes());
+        politico.setFotoUrl(request.getFotoUrl());
+        politico.setPromesas(new java.util.ArrayList<>());
+        politico.setVotos(new java.util.ArrayList<>());
+        politico.setComentarios(new java.util.ArrayList<>());
+        politico.setCalificaciones(new java.util.ArrayList<>());
+        politicoRepository.save(politico);
+        registrarLog("CREAR_POLITICO", "Político creado: " + politico.getNombreCompleto());
+    }
+
+    @Transactional
+    public void eliminarPolitico(Integer politicoId) {
+        Politico politico = politicoRepository.findById(politicoId).orElseThrow();
+        politicoRepository.delete(politico);
+        registrarLog("ELIMINAR_POLITICO", "Político eliminado: " + politico.getNombreCompleto());
+    }
+
+    private String normalizeLegislativeText(String original) {
+        if (original == null || original.isBlank()) {
+            return "No hay descripción disponible.";
+        }
+        String result = original.replaceAll("\\s+", " ").trim();
+
+        result = result.replaceAll("(?i)\\bexposición de motivos\\b", "motivos");
+        result = result.replaceAll("(?i)\\bexpone\\b", "dice");
+        result = result.replaceAll("(?i)\\bconsiderando\\b", "dado que");
+        result = result.replaceAll("(?i)\\bpor cuanto\\b", "porque");
+        result = result.replaceAll("(?i)\\bse establece\\b", "se fija");
+        result = result.replaceAll("(?i)\\bse dispone\\b", "se ordena");
+        result = result.replaceAll("(?i)\\bcon el fin de\\b", "para");
+        result = result.replaceAll("(?i)\\bcon objeto de\\b", "para");
+        result = result.replaceAll("(?i)\\ben el presente acto\\b", "aquí");
+        result = result.replaceAll("(?i)\\bserá\\b", "va a");
+        result = result.replaceAll("(?i)\\bdeberá\\b", "debe");
+        result = result.replaceAll("(?i)\\bpodrá\\b", "puede");
+
+        int maxLength = 320;
+        if (result.length() > maxLength) {
+            int end = result.indexOf('.', maxLength);
+            if (end > 0) {
+                result = result.substring(0, end + 1);
+            } else {
+                result = result.substring(0, maxLength) + "...";
+            }
+        }
+
+        return result.trim();
     }
 
     public ReporteHistoricoDTO getHistoricoResumen() {
