@@ -85,10 +85,10 @@ public class DataSeederService {
 
         // 5. PROMESAS
         List<Promesa> promesas = new ArrayList<>();
-        promesas.add(new Promesa(null, "No subiré impuestos a la clase media ni sectores populares.", "Economía", LocalDate.of(2023, 10, 1), p1, null));
-        promesas.add(new Promesa(null, "Plan Fénix: Control total de las cárceles y seguridad.", "Seguridad", LocalDate.of(2023, 9, 15), p1, null));
-        promesas.add(new Promesa(null, "Extradición inmediata para criminales peligrosos.", "Seguridad", LocalDate.of(2023, 8, 15), p5, null));
-        promesas.add(new Promesa(null, "Protección de cada hectárea de nuestra Amazonía.", "Medio Ambiente", LocalDate.of(2023, 9, 10), p6, null));
+        promesas.add(new Promesa(null, "No subiré impuestos a la clase media ni sectores populares.", "Economía", LocalDate.now(), LocalDate.of(2023, 10, 1), p1, null));
+        promesas.add(new Promesa(null, "Plan Fénix: Control total de las cárceles y seguridad.", "Seguridad", LocalDate.now(), LocalDate.of(2023, 9, 15), p1, null));
+        promesas.add(new Promesa(null, "Extradición inmediata para criminales peligrosos.", "Seguridad", LocalDate.now(), LocalDate.of(2023, 8, 15), p5, null));
+        promesas.add(new Promesa(null, "Protección de cada hectárea de nuestra Amazonía.", "Medio Ambiente", LocalDate.now(), LocalDate.of(2023, 9, 10), p6, null));
         promesaRepository.saveAll(promesas);
 
         // 6. VOTOS (Matriz masiva)

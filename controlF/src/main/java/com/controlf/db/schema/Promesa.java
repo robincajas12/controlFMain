@@ -23,6 +23,7 @@ public class Promesa {
 
     private String categoria;
     private LocalDate fechaCreacion;
+    private LocalDate fechaPromesa;
 
     @ManyToOne
     @JoinColumn(name = "politico_id", nullable = false)

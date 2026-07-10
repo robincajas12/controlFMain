@@ -13,6 +13,7 @@ import com.controlf.dto.MotorCoherenciaDataDTO;
 import com.controlf.dto.SimpleItemDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import java.time.LocalDate;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -59,19 +60,20 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    public void crearPromesa(CrearPromesaRequestDTO request) {
-        Politico politico = politicoRepository.findById(request.getPoliticoId()).orElseThrow();
+public void crearPromesa(CrearPromesaRequestDTO request) {
+    Politico politico = politicoRepository.findById(request.getPoliticoId()).orElseThrow();
 
-        Promesa promesa = new Promesa();
-        promesa.setDescripcion(request.getDescripcion());
-        promesa.setCategoria(request.getCategoria());
-        promesa.setFechaPromesa(request.getFechaPromesa());
-        promesa.setPolitico(politico);
-        promesa.setVinculos(List.of());
+    Promesa promesa = new Promesa();
+    promesa.setDescripcion(request.getDescripcion());
+    promesa.setCategoria(request.getCategoria());
+    promesa.setFechaPromesa(request.getFechaPromesa());
+    promesa.setFechaCreacion(LocalDate.now());
+    promesa.setPolitico(politico);
+    promesa.setVinculos(List.of());
 
-        promesaRepository.save(promesa);
-        registrarLog("CREAR_PROMESA", "Promesa creada para político " + politico.getId());
-    }
+    promesaRepository.save(promesa);
+    registrarLog("CREAR_PROMESA", "Promesa creada para político " + politico.getId());
+}
 
     public void crearVinculoCoherencia(VinculoRequestDTO request) {
         Promesa p = promesaRepository.findById(request.getPromesaId()).orElseThrow();
