@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+!build/libs/
+!build/libs/controlF-0.0.1-SNAPSHOT.jar
