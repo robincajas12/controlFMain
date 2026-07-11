@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { isValidEmail } from './authValidation';
+
+interface FieldErrors {
+  email?: string;
+  password?: string;
+}
+
+const inputBaseClass =
+  'w-full rounded-xl border bg-slate-50/50 px-4 py-3 text-sm text-slate-800 shadow-sm transition-colors placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2';
 
 const FRASES = [
   'La herramienta del pueblo y para el pueblo',
@@ -23,6 +32,7 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [fraseIndex, setFraseIndex] = useState(0);
@@ -49,9 +59,30 @@ const LoginPage: React.FC = () => {
     return <Navigate to={from} replace />;
   }
 
+  const validar = (): FieldErrors => {
+    const errores: FieldErrors = {};
+    if (!email.trim()) {
+      errores.email = 'Ingresa tu correo electrónico.';
+    } else if (!isValidEmail(email)) {
+      errores.email = 'El correo no tiene un formato válido.';
+    }
+    if (!password) {
+      errores.password = 'Ingresa tu contraseña.';
+    }
+    return errores;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
+
+    // Se valida antes de enviar; no se borra lo ingresado si algo falla.
+    const errores = validar();
+    setFieldErrors(errores);
+    if (Object.keys(errores).length > 0) {
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/auth/login', {
@@ -99,7 +130,7 @@ const LoginPage: React.FC = () => {
           Accede con tu cuenta para comentar, calificar y administrar el sistema.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-7 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-7 space-y-4" noValidate>
           {error && (
             <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-600">
               {error}
@@ -113,12 +144,18 @@ const LoginPage: React.FC = () => {
             <input
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, email: undefined }));
+              }}
               type="email"
               autoComplete="email"
               placeholder="correo@dominio.com"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm text-slate-800 shadow-sm transition-colors placeholder:text-slate-400 focus:border-accent-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+              className={`${inputBaseClass} ${fieldErrors.email ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-accent-blue focus:ring-accent-blue/20'}`}
             />
+            {fieldErrors.email && (
+              <p className="text-xs font-medium text-rose-600">{fieldErrors.email}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -128,12 +165,18 @@ const LoginPage: React.FC = () => {
             <input
               id="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setFieldErrors((prev) => ({ ...prev, password: undefined }));
+              }}
               type="password"
               autoComplete="current-password"
               placeholder="••••••••"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm text-slate-800 shadow-sm transition-colors placeholder:text-slate-400 focus:border-accent-blue focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-blue/20"
+              className={`${inputBaseClass} ${fieldErrors.password ? 'border-rose-300 focus:border-rose-400 focus:ring-rose-200' : 'border-slate-200 focus:border-accent-blue focus:ring-accent-blue/20'}`}
             />
+            {fieldErrors.password && (
+              <p className="text-xs font-medium text-rose-600">{fieldErrors.password}</p>
+            )}
           </div>
 
           <button

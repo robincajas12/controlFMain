@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import PanelControlSeguridad from './COMPONENTE_PANEL_DE_CONTROL/PanelControlSeguridad';
 import MotorCoherencia from './COMPONENTE_MOTOR_COHERENCIA/MotorCoherencia';
 import MantenimientoSistema from './COMPONENTE_MANTENIMIENTO_DEL_SISTEMA/MantenimientoSistema';
 import { useAuth } from '../../context/AuthContext';
@@ -9,12 +8,6 @@ interface AssemblyMember {
   firstName: string;
   lastname: string;
   territorial?: string;
-}
-
-interface PanelOption {
-  nombreOpcion: string;
-  icono: string;
-  notificacionBadge?: number;
 }
 
 interface VotingItem {
@@ -55,11 +48,6 @@ interface HistoricoData {
   leyesEnDebate: number;
 }
 
-interface AdminSecurityData {
-  tituloSeccion: string;
-  opciones: PanelOption[];
-}
-
 interface AdminMaintenanceData {
   id: string;
   titulo: string;
@@ -83,7 +71,6 @@ const defaultMaintenanceData: AdminMaintenanceData = {
 };
 
 const AdminPage: React.FC = () => {
-  const [seguridad, setSeguridad] = useState<AdminSecurityData | null>(null);
   const [mantenimiento, setMantenimiento] = useState<AdminMaintenanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [assemblyMembers, setAssemblyMembers] = useState<AssemblyMember[]>([]);
@@ -105,35 +92,32 @@ const AdminPage: React.FC = () => {
   const [politicoSyncResult, setPoliticoSyncResult] = useState<ImportResult | null>(null);
   const [isSyncingPoliticos, setIsSyncingPoliticos] = useState(false);
   const [isImportingPoliticos, setIsImportingPoliticos] = useState(false);
-  const [leyesParaSync, setLeyesParaSync] = useState<LeySyncItem[]>([]);
+  const [, setLeyesParaSync] = useState<LeySyncItem[]>([]);
   const [isSyncingAllLeyes, setIsSyncingAllLeyes] = useState(false);
   const [syncProgress, setSyncProgress] = useState<LeySyncProgress | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const politicoDropdownRef = useRef<HTMLDivElement>(null);
+  const memberDropdownRef = useRef<HTMLDivElement>(null);
   const { apiFetch } = useAuth();
   const ITEMS_PER_PAGE = 20;
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const [segRes, mantRes, historicoRes] = await Promise.all([
-        apiFetch('/api/admin/panel'),
+      const [mantRes, historicoRes] = await Promise.all([
         apiFetch('/api/admin/mantenimiento'),
         apiFetch('/api/admin/historico')
       ]);
 
-      const [securityData, maintenanceData, historicoData] = await Promise.all([
-        segRes.ok ? (segRes.json() as Promise<AdminSecurityData>) : Promise.resolve<AdminSecurityData | null>(null),
+      const [maintenanceData, historicoData] = await Promise.all([
         mantRes.ok ? (mantRes.json() as Promise<AdminMaintenanceData>) : Promise.resolve<AdminMaintenanceData | null>(null),
         historicoRes.ok ? (historicoRes.json() as Promise<HistoricoData>) : Promise.resolve<HistoricoData | null>(null)
       ]);
 
-      setSeguridad(securityData);
       setMantenimiento(maintenanceData);
       setHistorico(historicoData);
     } catch (error) {
       console.error('Error al cargar datos administrativos:', error);
-      setSeguridad(null);
       setMantenimiento(null);
     } finally {
       setIsLoading(false);
@@ -163,6 +147,20 @@ const AdminPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showPoliticoDropdown]);
 
+  // Cierra el desplegable de "Buscar Asambleísta" al hacer clic fuera del componente.
+  useEffect(() => {
+    if (!showMemberDropdown) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (memberDropdownRef.current && !memberDropdownRef.current.contains(event.target as Node)) {
+        setShowMemberDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMemberDropdown]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -170,24 +168,18 @@ const AdminPage: React.FC = () => {
       setIsLoading(true);
 
       try {
-        const [segRes, mantRes] = await Promise.all([
-          apiFetch('/api/admin/panel'),
-          apiFetch('/api/admin/mantenimiento')
-        ]);
+        const mantRes = await apiFetch('/api/admin/mantenimiento');
 
         if (!isMounted) return;
 
-        const [securityData, maintenanceData] = await Promise.all([
-          segRes.ok ? (segRes.json() as Promise<AdminSecurityData>) : Promise.resolve<AdminSecurityData | null>(null),
-          mantRes.ok ? (mantRes.json() as Promise<AdminMaintenanceData>) : Promise.resolve<AdminMaintenanceData | null>(null)
-        ]);
+        const maintenanceData = mantRes.ok
+          ? ((await mantRes.json()) as AdminMaintenanceData)
+          : null;
 
-        setSeguridad(securityData);
         setMantenimiento(maintenanceData);
       } catch (error) {
         console.error('Error al cargar datos administrativos:', error);
         if (isMounted) {
-          setSeguridad(null);
           setMantenimiento(null);
         }
       } finally {
@@ -500,29 +492,31 @@ const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto pb-12">
+    // El panel usa flex-col + utilidades "order-*" para presentar las secciones en
+    // un flujo lógico para un administrador nuevo, sin alterar la lógica de cada bloque:
+    // 1) Guía  2) Importar datos  3) Motor de coherencia  4) Reporte histórico  5) Mantenimiento.
+    <div className="max-w-6xl mx-auto pb-12 flex flex-col">
       <div className="mb-8 flex justify-between items-start">
         <div>
           <h2 className="text-2xl font-black text-primary-navy uppercase tracking-tighter">Panel de Control y Administración</h2>
-          <p className="text-slate-500">Gestión de auditoría ciudadana, seguridad y mantenimiento de infraestructura</p>
+          <p className="text-slate-500">Administra el contenido ciudadano y mantén la información al día desde un solo lugar.</p>
         </div>
         <button
           onClick={handleSeedDatabase}
           className="px-4 py-2 bg-accent-blue text-white rounded-lg text-xs font-bold shadow-sm hover:bg-blue-600 transition-colors flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-          POBLAR BASE DE DATOS (SEED)
+          CARGAR DATOS DE EJEMPLO
         </button>
       </div>
 
-      <PanelControlSeguridad
-        titulo={seguridad?.tituloSeccion ?? 'Panel de control'}
-        opciones={seguridad?.opciones ?? []}
-      />
+      {/* Paso 3 · Motor de coherencia (se usa una vez que ya existen políticos y leyes cargados) */}
+      <div className="order-3">
+        <MotorCoherencia />
+      </div>
 
-      <MotorCoherencia />
-
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+      {/* Paso 1 · Guía de bienvenida para orientar a un administrador nuevo */}
+      <div className="order-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8">
         <div className="px-8 py-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50">
           <div className="flex items-center gap-3">
             <div className="rounded-2xl bg-primary-navy p-3 text-white shadow-sm">
@@ -561,7 +555,8 @@ const AdminPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
+      {/* Paso 4 · Reporte histórico para revisar los resultados acumulados del sistema */}
+      <div className="order-4 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
         <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
           <h4 className="text-sm font-bold text-primary-navy uppercase tracking-wide">Reporte histórico agregado</h4>
         </div>
@@ -585,25 +580,23 @@ const AdminPage: React.FC = () => {
         </div>
       </div>
 
-      <MantenimientoSistema
-        info={mantenimiento ?? defaultMaintenanceData}
-        onAccion={handleAccionMantenimiento}
-      />
+      {/* Paso 5 · Estado y mantenimiento del sistema (revisión final) */}
+      <div className="order-5">
+        <MantenimientoSistema
+          info={mantenimiento ?? defaultMaintenanceData}
+          onAccion={handleAccionMantenimiento}
+        />
+      </div>
 
-      
-
-       
-
-         
-                 
-<div className="mb-8">
+      {/* Paso 2 · Importación de datos: normalmente lo primero que ejecuta un administrador */}
+<div className="order-2 mb-8">
   <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
     <div>
       <h4 className="text-sm font-black text-primary-navy uppercase tracking-wide flex items-center gap-2">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20V10" /><path d="M18 20V4" /><path d="M6 20v-4" /></svg>
         Importaciones de datos
       </h4>
-      <p className="text-sm text-slate-500 mt-1">Dos caminos independientes: elige el que se ajuste a tu objetivo. Cada uno usa endpoints reales del sistema y funciona por separado.</p>
+      <p className="text-sm text-slate-500 mt-1">Tienes dos formas independientes de traer información. Elige la que se ajuste a lo que necesitas; ambas funcionan por separado.</p>
     </div>
     <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
       <span className="h-2.5 w-2.5 rounded-full bg-accent-blue"></span>
@@ -623,12 +616,12 @@ const AdminPage: React.FC = () => {
       </div>
     </div>
     <div className="p-6">
-      <p className="text-sm font-semibold text-amber-800">Este paso es imprescindible para que funcionen <span className="underline decoration-amber-400 underline-offset-2">ambos caminos</span>. Debes ejecutarlo antes que cualquier importación.</p>
-      <p className="mt-2 text-sm text-amber-700/90">Carga los candidatos disponibles en la base local desde <span className="font-semibold">/api/admin/import-politicos</span>. Sin esta sincronización, ni la importación masiva ni la filtrada tendrán datos con los que trabajar.</p>
+      <p className="text-sm font-semibold text-amber-800">Este paso es imprescindible para las <span className="underline decoration-amber-400 underline-offset-2">dos formas de importar</span>. Ejecútalo antes de cualquier otra acción.</p>
+      <p className="mt-2 text-sm text-amber-700/90">Trae la lista oficial de asambleístas al sistema para poder trabajar con ellos. Si no realizas esta preparación, las siguientes opciones no tendrán candidatos que mostrar.</p>
       <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between rounded-2xl border border-amber-200 bg-white p-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">Origen de datos</p>
-          <p className="mt-1 text-sm text-slate-600">Guarda los candidatos en la base local para que puedan usarse en los flujos posteriores.</p>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600">Preparar el catálogo</p>
+          <p className="mt-1 text-sm text-slate-600">Deja la lista de candidatos lista para usarse en los pasos siguientes.</p>
         </div>
         {!hasSyncedPoliticos ? (
           <button
@@ -683,7 +676,7 @@ const AdminPage: React.FC = () => {
             Selección de candidatos sincronizados
           </div>
           <h5 className="mt-3 text-lg font-black text-primary-navy">Elige los políticos ya guardados en la base local</h5>
-          <p className="mt-2 text-sm text-slate-600">Esta lista se alimenta de <span className="font-semibold">/api/politicos/importables</span>, es decir, de los candidatos que ya están disponibles localmente después de la sincronización inicial.</p>
+          <p className="mt-2 text-sm text-slate-600">Aquí aparecen los candidatos que quedaron disponibles después de preparar el catálogo en el paso anterior.</p>
           <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Candidatos disponibles</p>
             {isLoadingMembers ? (
@@ -761,7 +754,7 @@ const AdminPage: React.FC = () => {
               Sincronización global
             </div>
             <h5 className="mt-3 text-lg font-black text-primary-navy">Sincronizar todas las leyes</h5>
-            <p className="mt-2 text-sm text-slate-600">Recorre todas las leyes locales y vincula los votos externos de VotingDetail para cada una. El proceso se actualiza en tiempo real con el estado de avance.</p>
+            <p className="mt-2 text-sm text-slate-600">Revisa todas las leyes ya cargadas y les añade la información de votos correspondiente. El avance se muestra en tiempo real mientras se completa.</p>
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
               <button
                 type="button"
@@ -806,7 +799,7 @@ const AdminPage: React.FC = () => {
               Importar leyes por candidato
             </div>
             <h5 className="mt-3 text-lg font-black text-primary-navy">Importar leyes y datos relacionados desde la base local</h5>
-            <p className="mt-2 text-sm text-slate-600">Conserva el comportamiento actual del backend: toma los candidatos seleccionados y los envía a <span className="font-semibold">/admin/import-leyes</span>. En este flujo también puede persistirse información relacionada de votaciones.</p>
+            <p className="mt-2 text-sm text-slate-600">Toma los candidatos que seleccionaste y trae todas sus leyes de una sola vez. Junto con las leyes también se guarda su información de votaciones relacionada.</p>
             <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Confirmar importación</p>
               <button
@@ -852,13 +845,13 @@ const AdminPage: React.FC = () => {
       </div>
       <div className="p-6">
                 <div className="flex-1">
-                  <p className="mt-2 text-sm text-slate-600">Mantiene el flujo manual actual: consulta la API externa de asambleístas en <span className="font-semibold">/admin/assembly-members</span>, carga sus votaciones desde <span className="font-semibold">{'/admin/assembly-members/{id}/votings'}</span> y envía únicamente las seleccionadas a <span className="font-semibold">{'/admin/import-votings/{memberId}/selected'}</span>.</p>
+                  <p className="mt-2 text-sm text-slate-600">Busca un asambleísta, revisa la lista de sus votaciones y elige una por una cuáles quieres incorporar. Solo se importarán las que marques.</p>
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
                     <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Buscar asambleísta</p>
                     {isLoadingMembers ? (
                       <p className="mt-3 text-sm text-slate-600">Cargando asambleístas...</p>
                     ) : (
-                      <div className="relative mt-3">
+                      <div ref={memberDropdownRef} className="relative mt-3">
                         <input
                           type="text"
                           value={memberSearch}

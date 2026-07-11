@@ -17,4 +17,11 @@ public class AuthRegisterRequestDTO {
 
     @NotBlank
     private String nombre;
+
+    /**
+     * Rol opcional solicitado desde el formulario (uso de pruebas/desarrollo).
+     * Si no se envía o no coincide con un rol existente, se asigna CIUDADANO.
+     * No se crean roles nuevos: se reutiliza el enum {@link com.controlf.db.schema.Usuario.Rol}.
+     */
+    private String rol;
 }
