@@ -27,7 +27,8 @@ import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeFormatterBuilder;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -55,7 +56,19 @@ public class AssemblyImportService {
         ResponseEntity<List<AssemblyMemberDTO>> response = restTemplate.exchange(
                 url, HttpMethod.GET, null, new ParameterizedTypeReference<>() {}
         );
-        return response.getBody();
+        List<AssemblyMemberDTO> members = response.getBody();
+        if (members == null) {
+            return List.of();
+        }
+
+        // La fuente externa devuelve al mismo asambleísta una vez por cada período
+        // legislativo, todas las entradas comparten el mismo id. Nos quedamos con una
+        // sola por id para evitar nombres repetidos en los selectores del panel.
+        Map<Long, AssemblyMemberDTO> uniquePorId = new LinkedHashMap<>();
+        for (AssemblyMemberDTO member : members) {
+            uniquePorId.putIfAbsent(member.getId(), member);
+        }
+        return new ArrayList<>(uniquePorId.values());
     }
 
     public List<VotingDTO> getVotings(Long memberId) throws Exception {

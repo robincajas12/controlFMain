@@ -118,10 +118,25 @@ void setUp() {
                 .andExpect(jsonPath("$[0].descripcion").value("Promesa pública"));
     }
 
+    @Test
+    void citizenCanCreateComentario() throws Exception {
+        Politico politico = savePolitico();
+        String token = loginAndGetToken("ciudadano-comentario@test.dev", "Password123", Usuario.Rol.CIUDADANO);
+
+        // El frontend envía únicamente { texto }; el usuario se toma del token JWT.
+        mockMvc.perform(post("/api/politicos/{id}/comentarios", politico.getId())
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"texto\":\"Comentario ciudadano\"}"))
+                .andExpect(status().isOk());
+    }
+
     private Politico savePolitico() {
         Politico politico = new Politico();
         politico.setNombreCompleto("Político de prueba");
         politico.setPromesas(new ArrayList<>());
+        politico.setComentarios(new ArrayList<>());
+        politico.setCalificaciones(new ArrayList<>());
         return politicoRepository.save(politico);
     }
 

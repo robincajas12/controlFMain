@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import SearchableSelect from '../components/SearchableSelect';
 
 interface SimpleItem {
   id: string;
@@ -132,39 +133,40 @@ const MotorCoherencia: React.FC = () => {
         <div className="space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1. Seleccionar Político</label>
-            <select 
+            {/* Selector con búsqueda por nombre: evita listas gigantes y se cierra al hacer clic fuera. */}
+            <SearchableSelect
+              options={politicos}
               value={selectedPolitico}
-              onChange={(e) => setSelectedPolitico(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all"
-            >
-              <option value="">-- Seleccionar Político --</option>
-              {politicos.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
+              onChange={setSelectedPolitico}
+              placeholder="-- Seleccionar Político --"
+              emptyText="Sin políticos disponibles"
+            />
           </div>
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2. Seleccionar Promesa</label>
-            <select 
-              disabled={!selectedPolitico}
+            {/* Se habilita solo cuando hay un político elegido, igual que antes. */}
+            <SearchableSelect
+              options={promesas}
               value={selectedPromesa}
-              onChange={(e) => setSelectedPromesa(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all disabled:opacity-50"
-            >
-              <option value="">-- Seleccionar Promesa --</option>
-              {promesas.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
-            </select>
+              onChange={setSelectedPromesa}
+              disabled={!selectedPolitico}
+              placeholder="-- Seleccionar Promesa --"
+              emptyText="Sin promesas registradas"
+            />
           </div>
 
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">3. Vincular con Ley</label>
-            <select 
+            {/* Permite buscar la ley por nombre o por su ID. */}
+            <SearchableSelect
+              options={leyes}
               value={selectedLey}
-              onChange={(e) => setSelectedLey(e.target.value)}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-accent-blue/20 transition-all"
-            >
-              <option value="">-- Seleccionar Ley --</option>
-              {leyes.map(l => <option key={l.id} value={l.id}>{l.label}</option>)}
-            </select>
+              onChange={setSelectedLey}
+              searchById
+              placeholder="-- Seleccionar Ley --"
+              emptyText="Sin leyes disponibles"
+            />
           </div>
         </div>
 

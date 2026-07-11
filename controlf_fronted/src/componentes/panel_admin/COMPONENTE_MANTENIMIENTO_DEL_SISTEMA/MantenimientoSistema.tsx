@@ -27,9 +27,9 @@ const MantenimientoSistema: React.FC<MantenimientoSistemaProps> = ({ info }) => 
       <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-12">
         <div className="space-y-6">
           <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-xs font-bold text-slate-500 uppercase">Estado de la Base de Datos</span>
+            <span className="text-xs font-bold text-slate-500 uppercase">Estado del sistema</span>
             <span className={`px-3 py-1 rounded-full text-[10px] font-black border ${info.estadoBaseDeDatos ? 'bg-success-green/10 text-success-green border-success-green/20' : 'bg-danger-red/10 text-danger-red border-danger-red/20'}`}>
-              {info.estadoBaseDeDatos ? 'OK - CONECTADO' : 'OFFLINE'}
+              {info.estadoBaseDeDatos ? 'EN LÍNEA' : 'SIN CONEXIÓN'}
             </span>
           </div>
 
@@ -52,8 +52,16 @@ const MantenimientoSistema: React.FC<MantenimientoSistemaProps> = ({ info }) => 
           </div>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-          No hay acciones disponibles en esta vista.
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+          <h5 className="text-xs font-black uppercase tracking-wide text-primary-navy mb-3">¿Qué significa esta sección?</h5>
+          <p className="leading-relaxed">
+            Aquí puedes revisar de un vistazo si el sistema está funcionando con normalidad,
+            cuándo se guardó la última copia de la información y qué tan cargado está el servicio.
+          </p>
+          <p className="mt-3 leading-relaxed">
+            Si el estado aparece <span className="font-bold text-danger-red">Sin conexión</span> o la carga se mantiene muy alta
+            durante mucho tiempo, comunícate con el equipo de soporte técnico.
+          </p>
         </div>
       </div>
     </div>

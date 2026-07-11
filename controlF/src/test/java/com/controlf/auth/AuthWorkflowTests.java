@@ -78,6 +78,66 @@ void setUp() {
     }
 
     @Test
+    void shouldRegisterWithSelectedRole() throws Exception {
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"admin-test@controlf.dev\",\"password\":\"Password123\",\"nombre\":\"Admin Elegido\",\"rol\":\"ADMIN\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.rol").value("ADMIN"));
+    }
+
+    @Test
+    void shouldDefaultToCiudadanoWhenRoleMissing() throws Exception {
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"sinrol@controlf.dev\",\"password\":\"Password123\",\"nombre\":\"Sin Rol\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.rol").value("CIUDADANO"));
+    }
+
+    @Test
+    void shouldRejectDuplicateNombre() throws Exception {
+        saveUsuario("Nombre Repetido", "primero@controlf.dev");
+
+        mockMvc.perform(post("/api/auth/registro")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"segundo@controlf.dev\",\"password\":\"Password123\",\"nombre\":\"nombre repetido\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.campo").value("nombre"));
+    }
+
+    @Test
+    void availabilityReportsTakenNombreWithSuggestions() throws Exception {
+        saveUsuario("Ana Torres", "ana@controlf.dev");
+
+        mockMvc.perform(post("/api/auth/availability")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Ana Torres\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreDisponible").value(false))
+                .andExpect(jsonPath("$.sugerencias").isNotEmpty());
+    }
+
+    @Test
+    void availabilityReportsFreeNombre() throws Exception {
+        mockMvc.perform(post("/api/auth/availability")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"nombre\":\"Nombre Totalmente Libre XYZ\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombreDisponible").value(true));
+    }
+
+    private void saveUsuario(String nombre, String email) {
+        Usuario usuario = new Usuario();
+        usuario.setNombre(nombre);
+        usuario.setEmail(email);
+        usuario.setPasswordHash(passwordEncoder.encode("Password123"));
+        usuario.setRol(Usuario.Rol.CIUDADANO);
+        usuario.setActivo(true);
+        usuarioRepository.save(usuario);
+    }
+
+    @Test
     void shouldRejectInvalidCredentials() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
