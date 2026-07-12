@@ -391,7 +391,7 @@ const RadarChart: React.FC<{ datos: MetricaItem[]; max?: number; sufijo?: string
 
 // Gráfico de línea/área. Ideal para la serie temporal, y válido como perfil
 // alternativo para series categóricas ordenadas.
-const LineAreaChart: React.FC<{ datos: MetricaItem[]; sufijo?: string; esTiempo?: boolean }> = ({ datos, sufijo = '', esTiempo = false }) => {
+const LineAreaChart: React.FC<{ datos: MetricaItem[]; sufijo?: string; esTiempo?: boolean; max?: number }> = ({ datos, sufijo = '', esTiempo = false, max }) => {
   const animado = useMounted();
   if (datos.length === 0) return <SinDatos />;
 
@@ -401,7 +401,9 @@ const LineAreaChart: React.FC<{ datos: MetricaItem[]; sufijo?: string; esTiempo?
   const padR = 12;
   const padT = 16;
   const padB = 34;
-  const maximo = Math.max(1, ...datos.map((d) => d.valor));
+  // Ancla el eje Y a un máximo fijo cuando se provee (p. ej. 100 para
+  // porcentajes), para ser consistente con las demás vistas; si no, auto-escala.
+  const maximo = max ?? Math.max(1, ...datos.map((d) => d.valor));
   const n = datos.length;
   const x = (i: number) => padL + (n === 1 ? (W - padL - padR) / 2 : (i * (W - padL - padR)) / (n - 1));
   const y = (v: number) => padT + (1 - v / maximo) * (H - padT - padB);
@@ -480,14 +482,17 @@ const LineAreaChart: React.FC<{ datos: MetricaItem[]; sufijo?: string; esTiempo?
 type ClaveOrden = 'etiqueta' | 'valor';
 type SentidoOrden = 'asc' | 'desc';
 
-const DataTable: React.FC<{ datos: MetricaItem[]; sufijo?: string; esTiempo?: boolean }> = ({ datos, sufijo = '', esTiempo = false }) => {
+const DataTable: React.FC<{ datos: MetricaItem[]; sufijo?: string; esTiempo?: boolean; esPorcentaje?: boolean }> = ({ datos, sufijo = '', esTiempo = false, esPorcentaje = false }) => {
   const [clave, setClave] = useState<ClaveOrden>('valor');
   const [sentido, setSentido] = useState<SentidoOrden>('desc');
   if (datos.length === 0) return <SinDatos />;
 
   const total = datos.reduce((s, d) => s + d.valor, 0);
   const maximo = Math.max(1, ...datos.map((d) => d.valor));
-  const mostrarPct = !esTiempo && total > 0;
+  // El "% del total" solo tiene sentido en conteos (partes de un todo). Para
+  // series de tiempo y para métricas que ya son porcentajes (p. ej. coherencia,
+  // un promedio) esa columna sería un número sin significado, así que se oculta.
+  const mostrarPct = !esTiempo && !esPorcentaje && total > 0;
 
   const ordenados = [...datos].sort((a, b) => {
     const va = clave === 'valor' ? a.valor : a.etiqueta;
@@ -650,9 +655,9 @@ const SerieChart: React.FC<{
         ? <RadarChart datos={datos} max={max} sufijo={sufijo} />
         : <HorizontalBars datos={datos} sufijo={sufijo} max={max} />;
     case 'linea':
-      return <LineAreaChart datos={datos} sufijo={sufijo} esTiempo={esTiempo} />;
+      return <LineAreaChart datos={datos} sufijo={sufijo} esTiempo={esTiempo} max={max} />;
     case 'tabla':
-      return <DataTable datos={datos} sufijo={sufijo} esTiempo={esTiempo} />;
+      return <DataTable datos={datos} sufijo={sufijo} esTiempo={esTiempo} esPorcentaje={tipo === 'porcentaje'} />;
     default:
       return <HorizontalBars datos={datos} sufijo={sufijo} max={max} />;
   }

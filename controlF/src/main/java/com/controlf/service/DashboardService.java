@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,8 +37,11 @@ public class DashboardService {
     private final CalificacionRepository calificacionRepository;
 
     public DashboardStatsDTO getStats() {
+        // Misma escala de coherencia que el resto del sistema (CUMPLE=100, AMBIGUO=50,
+        // INCUMPLE=0), para que "Coherencia global" coincida con la sección de Métricas,
+        // el repositorio y el CSV. scoreCoherencia además tolera nivelCoherencia null.
         Double avgCoherencia = vinculoRepository.findAll().stream()
-                .mapToDouble(v -> v.getNivelCoherencia().name().equals("CUMPLE") ? 100.0 : 0.0) // Simplificado
+                .mapToDouble(this::scoreCoherencia)
                 .average()
                 .orElse(0.0);
 
@@ -114,6 +118,10 @@ public class DashboardService {
                 serie.merge(periodo, 1L, Long::sum);
             }
         }
+        // Rellena los meses intermedios sin votos con 0, para que el eje temporal
+        // sea continuo y no "salte" meses (un mes con muchos votos no debe quedar
+        // pegado visualmente a otro mes lejano).
+        serie = rellenarMesesContinuos(serie);
 
         // Coherencia (cumplimiento) por categoría a partir de los vínculos de las leyes filtradas
         Map<String, long[]> acumCoherencia = new LinkedHashMap<>(); // [sumaPonderada, conteo]
@@ -167,6 +175,27 @@ public class DashboardService {
             case AMBIGUO -> 50;
             case INCUMPLE -> 0;
         };
+    }
+
+    /**
+     * Devuelve una serie mensual continua entre el primer y el último periodo presentes,
+     * insertando en 0 los meses intermedios que no tengan votos. Preserva el orden
+     * cronológico. Si la serie está vacía o tiene un solo mes, se devuelve tal cual.
+     */
+    private Map<String, Long> rellenarMesesContinuos(Map<String, Long> serie) {
+        if (serie.size() < 2) {
+            return serie;
+        }
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        YearMonth primero = YearMonth.parse(((java.util.TreeMap<String, Long>) serie).firstKey(), fmt);
+        YearMonth ultimo = YearMonth.parse(((java.util.TreeMap<String, Long>) serie).lastKey(), fmt);
+
+        Map<String, Long> continua = new LinkedHashMap<>();
+        for (YearMonth ym = primero; !ym.isAfter(ultimo); ym = ym.plusMonths(1)) {
+            String clave = ym.format(fmt);
+            continua.put(clave, serie.getOrDefault(clave, 0L));
+        }
+        return continua;
     }
 
     private List<MetricaItemDTO> toItems(Map<String, Long> mapa) {

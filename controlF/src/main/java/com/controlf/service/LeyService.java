@@ -404,6 +404,13 @@ public class LeyService {
         int ignored = 0;
         int duplicates = 0;
 
+        // La fecha de la votación es la de la ley (todos los votos de un mismo
+        // expediente ocurren en la misma sesión). El detalle externo no trae fecha
+        // por votante, así que se usa fechaIngreso; sólo si faltara se cae a "ahora".
+        LocalDateTime fechaVotacion = ley.getFechaIngreso() != null
+                ? ley.getFechaIngreso().atStartOfDay()
+                : LocalDateTime.now();
+
         for (VotingDetailDTO detail : details) {
             String fullName = buildFullName(detail.getFirstName(), detail.getLastname());
             if (fullName.isEmpty()) {
@@ -428,7 +435,7 @@ public class LeyService {
             voto.setLey(ley);
             voto.setTipoVoto(mapVote(detail.getDescription()));
             voto.setAsistencia(true);
-            voto.setFechaVoto(LocalDateTime.now());
+            voto.setFechaVoto(fechaVotacion);
             votoRepository.save(voto);
             imported++;
         }

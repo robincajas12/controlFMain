@@ -96,14 +96,17 @@ public class DataSeederService {
         promesaRepository.saveAll(promesas);
 
         // 6. VOTOS (Matriz masiva)
-        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, LocalDateTime.now(), p1, leyes.get(0)));
-        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, LocalDateTime.now(), p1, leyes.get(1)));
-        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, LocalDateTime.now(), p1, leyes.get(3)));
-        votoRepository.save(new Voto(null, TipoVoto.CONTRA, true, LocalDateTime.now(), p3, leyes.get(0)));
-        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, LocalDateTime.now(), p3, leyes.get(1)));
-        votoRepository.save(new Voto(null, TipoVoto.CONTRA, true, LocalDateTime.now(), p3, leyes.get(4)));
-        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, LocalDateTime.now(), p5, leyes.get(0)));
-        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, LocalDateTime.now(), p5, leyes.get(4)));
+        // La fecha de cada voto es la de ingreso de su ley (la votación ocurre en esa
+        // sesión), no "ahora": así la serie mensual refleja las fechas reales y no se
+        // concentra todo en el mes actual.
+        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, leyes.get(0).getFechaIngreso().atStartOfDay(), p1, leyes.get(0)));
+        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, leyes.get(1).getFechaIngreso().atStartOfDay(), p1, leyes.get(1)));
+        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, leyes.get(3).getFechaIngreso().atStartOfDay(), p1, leyes.get(3)));
+        votoRepository.save(new Voto(null, TipoVoto.CONTRA, true, leyes.get(0).getFechaIngreso().atStartOfDay(), p3, leyes.get(0)));
+        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, leyes.get(1).getFechaIngreso().atStartOfDay(), p3, leyes.get(1)));
+        votoRepository.save(new Voto(null, TipoVoto.CONTRA, true, leyes.get(4).getFechaIngreso().atStartOfDay(), p3, leyes.get(4)));
+        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, leyes.get(0).getFechaIngreso().atStartOfDay(), p5, leyes.get(0)));
+        votoRepository.save(new Voto(null, TipoVoto.FAVOR, true, leyes.get(4).getFechaIngreso().atStartOfDay(), p5, leyes.get(4)));
 
         // 7. VINCULOS
         vinculoRepository.save(new VinculoPromesaLey(null, ImpactoEsperado.NEGATIVO, NivelCoherencia.INCUMPLE, "Aprobó el alza del IVA al 15% pese a prometer repetidamente en campaña que no subiría impuestos.", promesas.get(0), leyes.get(0)));
