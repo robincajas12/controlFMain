@@ -26,5 +26,7 @@ public class PerfilPoliticoDTO {
     private long totalCalificaciones;
     private String etiquetaReputacion;
     private List<HistorialCoherenciaDTO> historial;
+    // Historial persistente de cambios en patrimonio/antecedentes (CF-005).
+    private List<HistorialCambioPerfilDTO> historialCambios;
     private List<ComentarioDebateDTO> comentarios;
 }

@@ -11,15 +11,18 @@ import com.controlf.db.schema.Usuario;
 import com.controlf.db.schema.Voto;
 import com.controlf.db.schema.enums.EstadoLey;
 import com.controlf.db.schema.enums.TipoVoto;
+import com.controlf.dto.ActualizarCampoPoliticoRequestDTO;
 import com.controlf.dto.AgendaLegislativaDTO;
 import com.controlf.dto.AlertaDTO;
 import com.controlf.dto.CalificacionRequestDTO;
 import com.controlf.dto.ComentarioRequestDTO;
 import com.controlf.dto.ComparacionVotosDTO;
+import com.controlf.dto.CrearLeyRequestDTO;
 import com.controlf.dto.DebateCiudadanoDTO;
 import com.controlf.dto.DebateLegislativoDTO;
 import com.controlf.dto.MetricasInteractivasDTO;
 import com.controlf.dto.PerfilPoliticoDTO;
+import com.controlf.service.AdminService;
 import com.controlf.service.AlertaService;
 import com.controlf.service.DashboardService;
 import com.controlf.service.LeyService;
@@ -31,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -53,6 +57,7 @@ class NuevasFuncionalidadesTests {
     @Autowired private DashboardService dashboardService;
     @Autowired private AlertaService alertaService;
     @Autowired private ValidacionService validacionService;
+    @Autowired private AdminService adminService;
 
     @Autowired private PoliticoRepository politicoRepository;
     @Autowired private LeyRepository leyRepository;
@@ -188,6 +193,85 @@ class NuevasFuncionalidadesTests {
         assertThat(validacionService.listarComentarios("RECHAZADO"))
                 .anyMatch(c -> c.getId().equals(comentarioId));
         assertThat(validacionService.contarPorEstado().get("RECHAZADO")).isEqualTo(1L);
+    }
+
+    // ---------- CF-005: historial persistente de cambios ----------
+    @Test
+    void profileExposesPersistedChangeHistory() {
+        Politico p = crearPolitico("Historial Persistente");
+        p.setPatrimonioDeclarado(new BigDecimal("100"));
+        politicoRepository.save(p);
+
+        politicoService.actualizarCampoPolitico(p.getId(),
+                ActualizarCampoPoliticoRequestDTO.builder().campo("patrimonio").valor("500").build());
+
+        PerfilPoliticoDTO perfil = politicoService.getPoliticoProfile(p.getId());
+        assertThat(perfil.getHistorialCambios()).isNotEmpty();
+        assertThat(perfil.getHistorialCambios().get(0).getCampo()).isEqualTo("patrimonio");
+        assertThat(perfil.getHistorialCambios().get(0).getValorAnterior()).isEqualTo("100");
+        assertThat(perfil.getHistorialCambios().get(0).getValorNuevo()).isEqualTo("500");
+    }
+
+    // ---------- CF-007: registro manual de propuesta de ley ----------
+    @Test
+    void adminCanCreateLawProposal() {
+        CrearLeyRequestDTO req = new CrearLeyRequestDTO();
+        req.setTitulo("Ley de Prueba Manual");
+        req.setCodigo("LEY-NEW-1");
+        req.setEstado("APROBADA");
+        req.setCategoria("SALUD");
+        adminService.crearLey(req);
+
+        Ley creada = leyRepository.findByCodigo("LEY-NEW-1").orElseThrow();
+        assertThat(creada.getEstado()).isEqualTo(EstadoLey.APROBADA);
+        assertThat(creada.getCategoria()).isEqualTo("SALUD");
+
+        CrearLeyRequestDTO duplicada = new CrearLeyRequestDTO();
+        duplicada.setTitulo("Otra");
+        duplicada.setCodigo("LEY-NEW-1");
+        assertThatThrownBy(() -> adminService.crearLey(duplicada))
+                .isInstanceOf(ResponseStatusException.class);
+    }
+
+    // ---------- CF-011: trazabilidad del estado en el perfil de ley ----------
+    @Test
+    void lawProfileExposesRealState() {
+        Ley ley = crearLey("Ley Estado", "LEY-EST-1", EstadoLey.APROBADA, "EDUCACION");
+        var perfil = leyService.getFullPerfilLey(ley.getId());
+        assertThat(perfil.getContenido().getEstado()).isEqualTo("APROBADA");
+        assertThat(perfil.getContenido().getCategoria()).isEqualTo("EDUCACION");
+    }
+
+    // ---------- CF-023: la calificación 1-5 se publica junto al comentario ----------
+    @Test
+    void commentCarriesCitizenRating() {
+        Ley ley = crearLey("Ley Rating", "LEY-RAT-1", EstadoLey.DEBATE, "SALUD");
+        Usuario u = crearUsuario("rating@test.dev");
+
+        ComentarioRequestDTO req = new ComentarioRequestDTO();
+        req.setTexto("Buen proyecto");
+        req.setPuntaje(4);
+        leyService.addComentario(ley.getId(), req, u.getId());
+
+        DebateCiudadanoDTO debate = leyService.getDebateCiudadano(ley.getId());
+        assertThat(debate.getComentarios()).hasSize(1);
+        assertThat(debate.getComentarios().get(0).getPuntaje()).isEqualTo(4);
+    }
+
+    // ---------- CF-022: exportación detallada ----------
+    @Test
+    void detailedExportsIncludeRows() {
+        Politico p = crearPolitico("Export Politico");
+        p.setPartidoPolitico("Partido X");
+        politicoRepository.save(p);
+        Ley ley = crearLey("Export Ley", "LEY-EXP-1", EstadoLey.APROBADA, "SALUD");
+        crearVoto(p, ley, TipoVoto.FAVOR, true);
+
+        String csvPoliticos = dashboardService.exportPoliticosCsv();
+        assertThat(csvPoliticos).contains("Nombre").contains("Export Politico").contains("Partido X");
+
+        String csvLeyes = dashboardService.exportLeyesCsv();
+        assertThat(csvLeyes).contains("Codigo").contains("LEY-EXP-1").contains("APROBADA");
     }
 
     // ---------- helpers ----------

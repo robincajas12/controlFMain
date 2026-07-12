@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import MotorCoherencia from './COMPONENTE_MOTOR_COHERENCIA/MotorCoherencia';
 import MantenimientoSistema from './COMPONENTE_MANTENIMIENTO_DEL_SISTEMA/MantenimientoSistema';
+import RegistroManual from './RegistroManual';
 import { useAuth } from '../../context/AuthContext';
 
 interface AssemblyMember {
@@ -586,6 +587,11 @@ const AdminPage: React.FC = () => {
           info={mantenimiento ?? defaultMaintenanceData}
           onAccion={handleAccionMantenimiento}
         />
+      </div>
+
+      {/* Registro manual: crear político (CF-001) o propuesta de ley (CF-007) desde cero */}
+      <div className="order-2">
+        <RegistroManual />
       </div>
 
       {/* Paso 2 · Importación de datos: normalmente lo primero que ejecuta un administrador */}

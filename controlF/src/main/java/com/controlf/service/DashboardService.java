@@ -33,6 +33,7 @@ public class DashboardService {
     private final ComentarioRepository comentarioRepository;
     private final VinculoPromesaLeyRepository vinculoRepository;
     private final VotoRepository votoRepository;
+    private final CalificacionRepository calificacionRepository;
 
     public DashboardStatsDTO getStats() {
         Double avgCoherencia = vinculoRepository.findAll().stream()
@@ -208,6 +209,72 @@ public class DashboardService {
             return false;
         }
         return hasta == null || !fecha.isAfter(hasta);
+    }
+
+    /**
+     * Exportación detallada por actor político (CF-022): coherencia, reputación y desglose de votos.
+     */
+    public String exportPoliticosCsv() {
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Nombre,Partido,Cargo,Region,Coherencia %,Reputacion (1-5),Total Calificaciones,Total Votos,Favor,Contra,Abstencion\n");
+        for (com.controlf.db.schema.Politico p : politicoRepository.findAll()) {
+            Double coherencia = vinculoRepository.findAverageCoherenciaByPoliticoId(p.getId());
+            Double reputacion = calificacionRepository.findAveragePuntajeByPoliticoId(p.getId());
+            long totalCalificaciones = calificacionRepository.countByPoliticoId(p.getId());
+            List<Voto> votos = votoRepository.findByPoliticoId(p.getId());
+            long favor = votos.stream().filter(v -> v.getTipoVoto() == TipoVoto.FAVOR).count();
+            long contra = votos.stream().filter(v -> v.getTipoVoto() == TipoVoto.CONTRA).count();
+            long abstencion = votos.stream().filter(v -> v.getTipoVoto() == TipoVoto.ABSTENCION).count();
+
+            csv.append(p.getId()).append(',')
+                    .append(escape(p.getNombreCompleto())).append(',')
+                    .append(escape(p.getPartidoPolitico())).append(',')
+                    .append(escape(p.getCargoActual())).append(',')
+                    .append(escape(p.getRegion())).append(',')
+                    .append(coherencia != null ? Math.round(coherencia * 10.0) / 10.0 : 0.0).append(',')
+                    .append(reputacion != null ? Math.round(reputacion * 10.0) / 10.0 : 0.0).append(',')
+                    .append(totalCalificaciones).append(',')
+                    .append(votos.size()).append(',')
+                    .append(favor).append(',')
+                    .append(contra).append(',')
+                    .append(abstencion).append('\n');
+        }
+        return csv.toString();
+    }
+
+    /**
+     * Exportación detallada por ley (CF-022): estado, categoría y resultado de la votación.
+     */
+    public String exportLeyesCsv() {
+        StringBuilder csv = new StringBuilder();
+        csv.append("ID,Codigo,Titulo,Categoria,Estado,Proponente,Favor,Contra,Abstencion,Total Votos\n");
+        for (Ley ley : leyRepository.findAll()) {
+            long favor = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.FAVOR);
+            long contra = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.CONTRA);
+            long abstencion = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.ABSTENCION);
+
+            csv.append(ley.getId()).append(',')
+                    .append(escape(ley.getCodigo())).append(',')
+                    .append(escape(ley.getTitulo())).append(',')
+                    .append(escape(ley.getCategoria())).append(',')
+                    .append(escape(ley.getEstado() != null ? ley.getEstado().name() : "SIN ESTADO")).append(',')
+                    .append(escape(ley.getProponente())).append(',')
+                    .append(favor).append(',')
+                    .append(contra).append(',')
+                    .append(abstencion).append(',')
+                    .append(favor + contra + abstencion).append('\n');
+        }
+        return csv.toString();
+    }
+
+    private String escape(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return '"' + value.replace("\"", "\"\"") + '"';
+        }
+        return value;
     }
 
     public String exportStatsCsv() {

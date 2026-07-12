@@ -265,6 +265,7 @@ public class LeyService {
         c.setUsuario(u);
         c.setFecha(LocalDateTime.now());
         c.setEsBasadoEnHechos(false);
+        c.setPuntaje(request.getPuntaje());
 
         comentarioRepository.save(c);
         ley.getComentarios().add(c);
@@ -292,6 +293,8 @@ public class LeyService {
                 .titulo(ley.getTitulo())
                 .resumenEjecutivo(ley.getDescripcionSimplificada())
                 .impactoSocial(ley.getImpactoSocial())
+                .estado(ley.getEstado() != null ? ley.getEstado().name() : "SIN ESTADO")
+                .categoria(ley.getCategoria())
                 .build();
     }
 
@@ -326,6 +329,7 @@ public class LeyService {
                         .mensaje(c.getTexto())
                         .fecha(c.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
                         .avatarUrl(c.getUsuario().getAvatarUrl())
+                        .puntaje(c.getPuntaje())
                         .build()).collect(Collectors.toList()))
                 .placeholderComentario("Escribe tu opinión sobre esta ley...")
                 .tieneBotonEnviar(true)

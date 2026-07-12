@@ -24,6 +24,9 @@ public class Comentario {
     private Boolean esBasadoEnHechos;
     private LocalDateTime fecha;
 
+    // Calificación ciudadana (1-5) asociada al comentario para mostrarla en el historial (CF-023).
+    private Integer puntaje;
+
     // Estado de moderación gestionado por el rol VALIDADOR (CF-029). Por defecto APROBADO
     // para mantener la publicación inmediata actual; los validadores pueden despublicarlo.
     @Enumerated(EnumType.STRING)

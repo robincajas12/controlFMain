@@ -79,12 +79,14 @@ public class PoliticoService {
                 .totalCalificaciones(totalCalificaciones)
                 .etiquetaReputacion(determineEtiquetaReputacion(reputacion, totalCalificaciones))
                 .historial(historial)
+                .historialCambios(parseHistorialCambios(p.getHistorialActualizaciones()))
                 .comentarios(p.getComentarios().stream().filter(PoliticoService::esComentarioPublico).map(c -> com.controlf.dto.ComentarioDebateDTO.builder()
                         .id(c.getId().toString())
                         .usuario(c.getUsuario().getNombre())
                         .mensaje(c.getTexto())
                         .fecha(c.getFecha().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")))
                         .avatarUrl(c.getUsuario().getAvatarUrl())
+                        .puntaje(c.getPuntaje())
                         .build()).collect(Collectors.toList()))
                 .build();
     }
@@ -323,7 +325,8 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         c.setUsuario(u);
         c.setFecha(LocalDateTime.now());
         c.setEsBasadoEnHechos(false);
-        
+        c.setPuntaje(request.getPuntaje());
+
         comentarioRepository.save(c);
         p.getComentarios().add(c);
         politicoRepository.save(p);
@@ -438,6 +441,36 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         if (coherencia >= alta) return "COHERENTE";
         if (coherencia >= media) return "AMBIGUO";
         return "INCOHERENTE";
+    }
+
+    /**
+     * Convierte el JSON persistido de historialActualizaciones en una lista ordenada de cambios
+     * (más recientes primero) para exponerlos en el perfil (CF-005).
+     */
+    private List<com.controlf.dto.HistorialCambioPerfilDTO> parseHistorialCambios(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            List<Map<String, Object>> entries = objectMapper.readValue(json, new TypeReference<>() {});
+            List<com.controlf.dto.HistorialCambioPerfilDTO> cambios = new ArrayList<>();
+            for (Map<String, Object> entry : entries) {
+                cambios.add(com.controlf.dto.HistorialCambioPerfilDTO.builder()
+                        .campo(asText(entry.get("campo")))
+                        .valorAnterior(asText(entry.get("valorAnterior")))
+                        .valorNuevo(asText(entry.get("valorNuevo")))
+                        .fecha(asText(entry.get("fecha")))
+                        .build());
+            }
+            java.util.Collections.reverse(cambios); // más recientes primero
+            return cambios;
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    private String asText(Object value) {
+        return value == null ? null : value.toString();
     }
 
     private String determineEtiquetaReputacion(Double reputacion, long totalCalificaciones) {

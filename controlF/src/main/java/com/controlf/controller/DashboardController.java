@@ -41,4 +41,22 @@ public class DashboardController {
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
                 .body(csv);
     }
+
+    @GetMapping("/export/politicos")
+    public ResponseEntity<String> exportPoliticos() {
+        String csv = dashboardService.exportPoliticosCsv();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-politicos-detallado.csv")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
+    }
+
+    @GetMapping("/export/leyes")
+    public ResponseEntity<String> exportLeyes() {
+        String csv = dashboardService.exportLeyesCsv();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-leyes-detallado.csv")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
+    }
 }
