@@ -9,12 +9,16 @@ interface ParticipacionCiudadanaProps {
   tipoEntidad?: 'politico' | 'ley';
 }
 
+/**
+ * Formulario de calificación y comentario ciudadano, más el listado de
+ * comentarios existentes. Reutilizado tanto en el perfil de político como
+ * en el de ley, adaptando sus textos según `tipoEntidad`.
+ */
 const ParticipacionCiudadana: React.FC<ParticipacionCiudadanaProps> = ({ comentarios, onAddComentario, tipoEntidad = 'politico' }) => {
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [puntaje, setPuntaje] = useState(0);
   const { isAuthenticated } = useAuth();
 
-  // Textos adaptados al contexto (político vs ley) para no reutilizar copy incorrecto (CF-026).
   const esLey = tipoEntidad === 'ley';
   const tituloCalificar = esLey ? 'Califica esta ley' : 'Califica a este político';
   const placeholderOpinion = esLey
@@ -38,7 +42,6 @@ const ParticipacionCiudadana: React.FC<ParticipacionCiudadanaProps> = ({ comenta
       </h4>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Formulario de participación */}
         <div className="space-y-6">
           <div className="bg-slate-50 rounded-xl p-6 border border-slate-100">
             <h5 className="text-sm font-bold text-slate-700 mb-4">{tituloCalificar}</h5>
@@ -87,7 +90,6 @@ const ParticipacionCiudadana: React.FC<ParticipacionCiudadanaProps> = ({ comenta
           </div>
         </div>
 
-        {/* Lista de comentarios */}
         <div className="space-y-6">
           <h5 className="text-sm font-bold text-slate-700 flex items-center justify-between">
             Comentarios Recientes

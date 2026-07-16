@@ -8,26 +8,25 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Métricas de cumplimiento exploradas de forma interactiva (CF-021). Devuelve agregaciones
- * filtrables por categoría, estado y rango de fechas para alimentar gráficos y comparaciones.
+ * Métricas de cumplimiento exploradas de forma interactiva: agregaciones
+ * filtrables por categoría, estado y rango de fechas para alimentar
+ * gráficos y comparaciones.
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class MetricasInteractivasDTO {
-    // Filtros aplicados (eco para el frontend)
+    /** Filtros efectivamente aplicados, devueltos como eco para el frontend. */
     private String categoriaFiltro;
     private String estadoFiltro;
     private String desde;
     private String hasta;
 
-    // Totales
     private long totalLeyes;
     private long totalVotos;
     private double promedioCoherenciaGlobal;
 
-    // Distribuciones
     private List<MetricaItemDTO> leyesPorEstado;
     private List<MetricaItemDTO> leyesPorCategoria;
     private List<MetricaItemDTO> votosPorTipo;

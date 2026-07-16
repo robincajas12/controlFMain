@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Resumen del resultado de normalizar el lenguaje legislativo de las leyes.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -4,6 +4,9 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
+/**
+ * Solicitud para registrar una nueva promesa de campaña.
+ */
 @Data
 public class CrearPromesaRequestDTO {
     private Integer politicoId;

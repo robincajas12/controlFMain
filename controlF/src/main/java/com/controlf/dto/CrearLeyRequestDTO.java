@@ -6,7 +6,7 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * Solicitud para registrar manualmente una nueva propuesta de ley (CF-007).
+ * Solicitud para registrar manualmente una nueva ley.
  */
 @Data
 public class CrearLeyRequestDTO {
@@ -22,6 +22,7 @@ public class CrearLeyRequestDTO {
     private String descripcionSimplificada;
     private String impactoSocial;
     private String categoria;
-    private String estado;         // EstadoLey; por defecto DEBATE
+    /** Nombre de {@link com.controlf.db.schema.enums.EstadoLey}; por defecto {@code DEBATE}. */
+    private String estado;
     private LocalDate fechaIngreso;
 }

@@ -6,6 +6,9 @@ interface PaginacionProps {
   onPageChange: (page: number) => void;
 }
 
+/**
+ * Controles de paginación (anterior/siguiente); no se renderiza si solo hay una página.
+ */
 const Paginacion: React.FC<PaginacionProps> = ({
   paginaActual,
   totalPaginas,

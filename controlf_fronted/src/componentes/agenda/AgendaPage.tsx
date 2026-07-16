@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+/** Evento puntual de la agenda: ingreso de un expediente o votación registrada. */
 interface EventoAgenda {
   tipo: string;      // INGRESO_LEY | VOTACION
   fecha: string;     // yyyy-MM-dd
@@ -37,12 +38,14 @@ interface DebateLegislativo {
 
 const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
+/** @returns el nombre de mes en español y el año a partir de una fecha `yyyy-MM` o `yyyy-MM-dd`. */
 const etiquetaMes = (fecha: string) => {
   const [anio, mes] = fecha.split('-');
   const idx = Number(mes) - 1;
   return `${MESES[idx] ?? mes} ${anio}`;
 };
 
+/** @returns las clases de color del badge de estado de una ley. */
 const estadoBadge = (estado: string | null) => {
   switch ((estado || '').toUpperCase()) {
     case 'APROBADA': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -53,6 +56,11 @@ const estadoBadge = (estado: string | null) => {
   }
 };
 
+/**
+ * Agenda legislativa con dos vistas: un calendario de eventos agrupados
+ * por mes, y un listado de debates filtrable por estado con su
+ * transcripción oficial y resumen simplificado.
+ */
 const AgendaPage: React.FC = () => {
   const [tab, setTab] = useState<'calendario' | 'debates'>('calendario');
   const [agenda, setAgenda] = useState<Agenda | null>(null);
@@ -78,6 +86,7 @@ const AgendaPage: React.FC = () => {
       .catch((err) => console.error('Error al cargar debates:', err));
   }, [estadoDebate]);
 
+  // Agrupa los eventos por mes (yyyy-MM) preservando el orden de llegada, que ya viene ordenado descendente desde el backend.
   const eventosPorMes = useMemo(() => {
     const grupos: { mes: string; eventos: EventoAgenda[] }[] = [];
     const indice: Record<string, EventoAgenda[]> = {};

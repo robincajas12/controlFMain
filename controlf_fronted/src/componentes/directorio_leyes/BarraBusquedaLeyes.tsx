@@ -15,6 +15,12 @@ interface BarraBusquedaLeyesProps {
   onSearchSubmit: () => void;
 }
 
+/**
+ * Cabecera y controles de búsqueda del directorio de leyes: término libre,
+ * filtros dinámicos (categoría, estado) y botón de búsqueda. El estado de
+ * los filtros y del término vive en el componente padre; este solo emite
+ * los cambios.
+ */
 const BarraBusquedaLeyes: React.FC<BarraBusquedaLeyesProps> = ({
   termino,
   filtros,

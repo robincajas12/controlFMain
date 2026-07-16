@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import java.util.Map;
 
 /**
- * Una ley votada por dos o más de los políticos comparados (CF-016). El mapa votos asocia el id
- * del político con su voto ("FAVOR" / "CONTRA" / "ABSTENCION" o "—" si no votó).
+ * Ley votada por dos o más de los políticos comparados. El mapa
+ * {@code votos} asocia el id del político con su voto ({@code "FAVOR"},
+ * {@code "CONTRA"}, {@code "ABSTENCION"} o {@code "—"} si no votó).
  */
 @Data
 @Builder
@@ -19,5 +20,6 @@ public class ComparacionLeyDTO {
     private String leyId;
     private String leyTitulo;
     private Map<String, String> votos;
-    private boolean coinciden; // true si todos los que votaron coincidieron en el sentido del voto
+    /** {@code true} si todos los que votaron coincidieron en el sentido del voto. */
+    private boolean coinciden;
 }

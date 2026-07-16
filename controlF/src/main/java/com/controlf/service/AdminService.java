@@ -32,6 +32,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Lógica de negocio detrás del panel administrativo: creación y
+ * eliminación de contenido (leyes, políticos, promesas, vínculos de
+ * coherencia), sincronización con la fuente externa, mantenimiento del
+ * sistema y auditoría (log de acciones administrativas).
+ */
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -48,6 +54,10 @@ public class AdminService {
     private final LeyService leyService;
     private final VotoRepository votoRepository;
 
+    /**
+     * @return los políticos y leyes disponibles como origen/destino de
+     *         vínculos en el motor de coherencia
+     */
     public MotorCoherenciaDataDTO getMotorData() {
         List<SimpleItemDTO> politicos = politicoRepository.findAll().stream()
                 .map(p -> new SimpleItemDTO(p.getId().toString(), p.getNombreCompleto()))
@@ -63,12 +73,22 @@ public class AdminService {
                 .build();
     }
 
+    /**
+     * @param politicoId identificador del político
+     * @return las promesas de campaña registradas para ese político
+     */
     public List<SimpleItemDTO> getPromesasByPolitico(Integer politicoId) {
         return promesaRepository.findByPoliticoId(politicoId).stream()
                 .map(p -> new SimpleItemDTO(p.getId().toString(), p.getDescripcion()))
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Registra una nueva promesa de campaña asociada a un político.
+     *
+     * @param request datos de la promesa a crear
+     * @throws java.util.NoSuchElementException si el político indicado no existe
+     */
     public void crearPromesa(CrearPromesaRequestDTO request) {
         Politico politico = politicoRepository.findById(request.getPoliticoId()).orElseThrow();
 
@@ -83,6 +103,13 @@ public class AdminService {
         registrarLog("CREAR_PROMESA", "Promesa creada para político " + politico.getId());
     }
 
+    /**
+     * Crea un vínculo de coherencia entre una promesa de campaña y una ley,
+     * registrando el nivel de coherencia y el impacto esperado.
+     *
+     * @param request datos del vínculo a crear
+     * @throws java.util.NoSuchElementException si la promesa o la ley indicadas no existen
+     */
     public void crearVinculoCoherencia(VinculoRequestDTO request) {
         Promesa p = promesaRepository.findById(request.getPromesaId()).orElseThrow();
         Ley l = leyRepository.findById(request.getLeyId()).orElseThrow();
@@ -98,14 +125,27 @@ public class AdminService {
         registrarLog("CREAR_VINCULO", "Vínculo creado entre promesa " + p.getId() + " y ley " + l.getId());
     }
 
+    /**
+     * Ejecuta un respaldo manual de la base de datos. El respaldo en sí lo
+     * gestiona la infraestructura; este método solo registra la acción.
+     *
+     * @param adminId identificador del administrador que lo solicitó (sin uso actualmente)
+     */
     public void ejecutarRespaldo(Integer adminId) {
         registrarLog("BACKUP", "Respaldo manual ejecutado");
     }
 
+    /**
+     * Limpia las cachés del sistema y registra la acción.
+     */
     public void limpiarCache() {
         registrarLog("CACHE_CLEAR", "Caché del sistema limpiada");
     }
 
+    /**
+     * Sincroniza las leyes de todos los políticos registrados con la
+     * fuente externa.
+     */
     public void importarLeyes() {
         var politicoIds = politicoRepository.findAll().stream()
                 .map(Politico::getId)
@@ -120,6 +160,13 @@ public class AdminService {
         registrarLog("IMPORT_LEYES", String.format("Sincronización con API externa finalizada: importadas=%d, duplicadas=%d, ignoradas=%d", result.getImported(), result.getDuplicates(), result.getIgnored()));
     }
 
+    /**
+     * Reescribe la descripción original de cada ley en lenguaje más
+     * accesible, sustituyendo fórmulas legislativas comunes por
+     * equivalentes en lenguaje llano y acotando la longitud del texto.
+     *
+     * @return un resumen con el total de leyes procesadas, actualizadas y sin cambios
+     */
     @Transactional
     public LeyNormalizacionResultDTO normalizarLeyes() {
         List<Ley> leyes = leyRepository.findAll();
@@ -149,6 +196,9 @@ public class AdminService {
                 .build();
     }
 
+    /**
+     * @return todas las leyes con su identificador externo, como candidatas a sincronización
+     */
     public java.util.List<LeySyncItemDTO> listarLeyesParaSync() {
         return leyRepository.findAll().stream()
                 .map(ley -> LeySyncItemDTO.builder()
@@ -159,6 +209,12 @@ public class AdminService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    /**
+     * Recorre todas las leyes con identificador externo e importa el
+     * detalle de su votación desde la fuente externa, una por una.
+     *
+     * @return un resumen del progreso y resultado de la sincronización
+     */
     @Transactional
     public LeySyncStatusDTO syncAllLeyesWithVotingDetails() {
         var leyes = leyRepository.findAll();
@@ -196,6 +252,11 @@ public class AdminService {
                 .build();
     }
 
+    /**
+     * Registra un nuevo político con listas de relaciones vacías.
+     *
+     * @param request datos del político a crear
+     */
     @Transactional
     public void crearPolitico(CrearPoliticoRequestDTO request) {
         Politico politico = new Politico();
@@ -216,6 +277,14 @@ public class AdminService {
         registrarLog("CREAR_POLITICO", "Político creado: " + politico.getNombreCompleto());
     }
 
+    /**
+     * Registra una nueva ley manualmente, validando que el código de
+     * expediente sea único.
+     *
+     * @param request datos de la ley a crear
+     * @throws org.springframework.web.server.ResponseStatusException 400 si
+     *         el código está vacío, 409 si ya existe una ley con ese código
+     */
     @Transactional
     public void crearLey(CrearLeyRequestDTO request) {
         String codigo = request.getCodigo() == null ? "" : request.getCodigo().trim();
@@ -248,6 +317,10 @@ public class AdminService {
         registrarLog("CREAR_LEY", "Ley creada manualmente: " + ley.getCodigo());
     }
 
+    /**
+     * @param estado nombre de estado recibido en la petición; puede ser {@code null} o inválido
+     * @return el {@code EstadoLey} correspondiente, o {@code DEBATE} si es nulo, vacío o desconocido
+     */
     private com.controlf.db.schema.enums.EstadoLey parseEstadoLey(String estado) {
         if (estado == null || estado.isBlank()) {
             return com.controlf.db.schema.enums.EstadoLey.DEBATE;
@@ -259,6 +332,12 @@ public class AdminService {
         }
     }
 
+    /**
+     * Elimina un político y sus registros asociados.
+     *
+     * @param politicoId identificador del político
+     * @throws java.util.NoSuchElementException si el político no existe
+     */
     @Transactional
     public void eliminarPolitico(Integer politicoId) {
         Politico politico = politicoRepository.findById(politicoId).orElseThrow();
@@ -266,6 +345,14 @@ public class AdminService {
         registrarLog("ELIMINAR_POLITICO", "Político eliminado: " + politico.getNombreCompleto());
     }
 
+    /**
+     * Sustituye fórmulas legislativas frecuentes por equivalentes en
+     * lenguaje llano y recorta el resultado a un largo razonable,
+     * intentando cortar en un punto final para no truncar a mitad de frase.
+     *
+     * @param original texto original de la ley; puede ser {@code null} o estar vacío
+     * @return el texto normalizado, o un mensaje por defecto si no había texto original
+     */
     private String normalizeLegislativeText(String original) {
         if (original == null || original.isBlank()) {
             return "No hay descripción disponible.";
@@ -298,6 +385,9 @@ public class AdminService {
         return result.trim();
     }
 
+    /**
+     * @return un resumen histórico agregado de leyes y votos para el dashboard administrativo
+     */
     public ReporteHistoricoDTO getHistoricoResumen() {
         long totalLeyes = leyRepository.count();
         long totalVotos = votoRepository.count();
@@ -318,6 +408,12 @@ public class AdminService {
                 .build();
     }
 
+    /**
+     * Persiste una entrada de auditoría con la acción administrativa realizada.
+     *
+     * @param accion código corto de la acción (p. ej. {@code "BACKUP"})
+     * @param detalles descripción legible de lo ocurrido
+     */
     private void registrarLog(String accion, String detalles) {
         LogSistema log = new LogSistema();
         log.setAccion(accion);
@@ -326,6 +422,9 @@ public class AdminService {
         logRepository.save(log);
     }
 
+    /**
+     * @return el panel de seguridad y usuarios (reportes pendientes, logs del sistema)
+     */
     public PanelControlDTO getSecurityPanel() {
         int reportadosCount = (int) reporteRepository.countByEstado(Reporte.EstadoReporte.PENDIENTE);
         int logsCount = (int) logRepository.count();
@@ -340,10 +439,14 @@ public class AdminService {
                 .build();
     }
 
+    /**
+     * @return el estado de mantenimiento del servidor: disponibilidad de la
+     *         base de datos, carga de CPU y fecha del último respaldo
+     */
     public PanelMantenimientoDTO getMantenimientoInfo() {
         boolean dbStatus = isDatabaseUp();
         int cpuLoad = getSystemCpuLoad();
-        
+
         String ultimaFecha = logRepository.findAll().stream()
                 .filter(l -> l.getAccion().contains("BACKUP"))
                 .map(l -> l.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")))
@@ -362,6 +465,9 @@ public class AdminService {
                 .build();
     }
 
+    /**
+     * @return {@code true} si se puede abrir una conexión válida a la base de datos
+     */
     private boolean isDatabaseUp() {
         try (Connection conn = dataSource.getConnection()) {
             return conn.isValid(1);
@@ -370,6 +476,9 @@ public class AdminService {
         }
     }
 
+    /**
+     * @return la carga de CPU del sistema como porcentaje entero (0 si no se pudo determinar)
+     */
     private int getSystemCpuLoad() {
         try {
             OperatingSystemMXBean osBean = (OperatingSystemMXBean) ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);

@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Vista de un comentario ciudadano para el panel de validación (CF-029), incluyendo el contexto
- * (ley o político al que pertenece) para que el validador decida aprobar, rechazar u observar.
+ * Vista de un comentario ciudadano para el panel de validación, incluyendo
+ * el contexto (ley o político al que pertenece) para que el validador
+ * decida aprobarlo, rechazarlo u observarlo.
  */
 @Data
 @Builder
@@ -20,7 +21,8 @@ public class ComentarioModeracionDTO {
     private String fecha;
     private String estado;
     private String notaModeracion;
-    private String contextoTipo;   // LEY | POLITICO | N/D
+    /** {@code "LEY"}, {@code "POLITICO"} o {@code "N/D"}. */
+    private String contextoTipo;
     private String contextoTitulo;
     private String contextoId;
 }

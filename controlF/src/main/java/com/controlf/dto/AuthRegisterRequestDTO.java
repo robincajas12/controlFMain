@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/**
+ * Datos enviados al registrar una nueva cuenta.
+ */
 @Data
 public class AuthRegisterRequestDTO {
     @NotBlank
@@ -19,9 +22,10 @@ public class AuthRegisterRequestDTO {
     private String nombre;
 
     /**
-     * Rol opcional solicitado desde el formulario (uso de pruebas/desarrollo).
-     * Si no se envía o no coincide con un rol existente, se asigna CIUDADANO.
-     * No se crean roles nuevos: se reutiliza el enum {@link com.controlf.db.schema.Usuario.Rol}.
+     * Rol opcional solicitado desde el formulario de registro (pensado
+     * para pruebas/desarrollo). Si no se envía o no coincide con un rol
+     * existente, se asigna {@code CIUDADANO}; ver
+     * {@link com.controlf.db.schema.Usuario.Rol}.
      */
     private String rol;
 }

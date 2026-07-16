@@ -7,6 +7,11 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Perfil de un actor político: datos generales, promesas de campaña,
+ * votos emitidos, comentarios ciudadanos, calificaciones y el historial
+ * de cambios realizados sobre su perfil.
+ */
 @Entity
 @Table(name = "politicos")
 @Data
@@ -14,6 +19,25 @@ import java.util.List;
 @AllArgsConstructor
 public class Politico {
 
+    /**
+     * Constructor de compatibilidad que omite {@code historialActualizaciones},
+     * inicializándolo en {@code null}.
+     *
+     * @param id identificador del político
+     * @param nombreCompleto nombre completo
+     * @param partidoPolitico partido o movimiento político
+     * @param cargoActual cargo que ocupa actualmente
+     * @param region región a la que representa
+     * @param comision comisión legislativa a la que pertenece
+     * @param estaActivo si el político está actualmente en funciones
+     * @param patrimonioDeclarado patrimonio declarado
+     * @param antecedentes antecedentes relevantes
+     * @param fotoUrl URL de la fotografía de perfil
+     * @param promesas promesas de campaña asociadas
+     * @param votos votos emitidos
+     * @param comentarios comentarios ciudadanos recibidos
+     * @param calificaciones calificaciones ciudadanas recibidas
+     */
     public Politico(Integer id, String nombreCompleto, String partidoPolitico, String cargoActual, String region,
                     String comision, Boolean estaActivo, BigDecimal patrimonioDeclarado, String antecedentes,
                     String fotoUrl, List<Promesa> promesas, List<Voto> votos, List<Comentario> comentarios,

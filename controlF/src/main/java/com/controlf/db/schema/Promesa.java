@@ -7,6 +7,10 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Promesa de campaña de un político, potencialmente vinculada a una o
+ * más leyes para el análisis de coherencia.
+ */
 @Entity
 @Table(name = "promesas")
 @Data

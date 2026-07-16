@@ -5,6 +5,10 @@ interface MetricaCoherenciaProps {
   estadoEtiqueta: string;
 }
 
+/**
+ * Indicador visual del porcentaje de coherencia entre promesas de
+ * campaña y votos de un político.
+ */
 const MetricaCoherencia: React.FC<MetricaCoherenciaProps> = ({ porcentaje, estadoEtiqueta }) => {
   const getColorClasses = (val: number) => {
     if (val >= 70) return 'text-success-green bg-success-green/10 border-success-green/20 fill-success-green';

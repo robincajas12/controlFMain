@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Resultado de la votación de una ley, junto a los datos necesarios para
+ * representarlo como un indicador visual (escala mínima/media/máxima).
+ */
 @Data
 @Builder
 @NoArgsConstructor

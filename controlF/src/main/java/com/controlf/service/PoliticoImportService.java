@@ -11,6 +11,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Importa miembros de la asamblea (obtenidos vía {@link AssemblyImportService})
+ * como registros {@code Politico}, evitando duplicados por nombre.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -19,7 +23,11 @@ public class PoliticoImportService {
     private final PoliticoRepository politicoRepository;
     private final AssemblyImportService assemblyImportService;
 
-    // Importar todos los políticos
+    /**
+     * Importa todos los miembros de la asamblea disponibles en la fuente externa.
+     *
+     * @return el resultado con totales de encontrados, importados y duplicados
+     */
     public PoliticoImportResultDTO importAll() {
         List<AssemblyMemberDTO> members = assemblyImportService.getAssemblyMembers();
         if (members == null || members.isEmpty()) {
@@ -42,6 +50,13 @@ public class PoliticoImportService {
         return new PoliticoImportResultDTO(found, imported, duplicates);
     }
 
+    /**
+     * Importa únicamente los miembros de la asamblea cuyo identificador
+     * externo está incluido en {@code selectedIds}.
+     *
+     * @param selectedIds identificadores externos a importar
+     * @return el resultado con totales de encontrados, importados y duplicados
+     */
     public PoliticoImportResultDTO importSelected(List<Long> selectedIds) {
         List<AssemblyMemberDTO> allMembers = assemblyImportService.getAssemblyMembers();
         if (allMembers == null || allMembers.isEmpty() || selectedIds == null || selectedIds.isEmpty()) {
@@ -66,6 +81,14 @@ public class PoliticoImportService {
         return new PoliticoImportResultDTO(found, imported, duplicates);
     }
 
+    /**
+     * Persiste un miembro de la asamblea como {@code Politico}, salvo que
+     * ya exista uno con el mismo nombre completo (comparación insensible a
+     * mayúsculas/minúsculas) o que el nombre resultante quede vacío.
+     *
+     * @param m miembro de la asamblea a procesar
+     * @return {@code true} si se omitió por ser un nombre vacío o duplicado, {@code false} si se guardó
+     */
     private boolean procesarGuardadoPolitico(AssemblyMemberDTO m) {
         String nombre = ((m.getFirstName() != null ? m.getFirstName() : "") + " " +
                 (m.getLastname() != null ? m.getLastname() : "")).trim().toUpperCase();

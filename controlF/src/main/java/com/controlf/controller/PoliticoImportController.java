@@ -8,21 +8,33 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Importa políticos desde la fuente externa hacia el modelo interno.
+ */
 @RestController
-@RequestMapping("/api/admin") // <--- Escucha la base de la ruta admin
+@RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @CrossOrigin("*")
 public class PoliticoImportController {
 
     private final PoliticoImportService politicoImportService;
 
-    // POST /api/admin/import-politicos
-    @PostMapping("/import-politicos") // <--- Escucha la acción concreta
+    /**
+     * Importa todos los políticos disponibles en la fuente externa.
+     *
+     * @return el resultado de la importación
+     */
+    @PostMapping("/import-politicos")
     public ResponseEntity<PoliticoImportResultDTO> importAll() {
         return ResponseEntity.ok(politicoImportService.importAll());
     }
 
-    // POST /api/admin/import-politicos/selected
+    /**
+     * Importa únicamente los políticos seleccionados.
+     *
+     * @param selectedIds identificadores externos de los políticos a importar
+     * @return el resultado de la importación
+     */
     @PostMapping("/import-politicos/selected")
     public ResponseEntity<PoliticoImportResultDTO> importSelected(@RequestBody List<Long> selectedIds) {
         return ResponseEntity.ok(politicoImportService.importSelected(selectedIds));

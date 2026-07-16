@@ -11,6 +11,7 @@ interface PoliticoItem {
   label: string;
 }
 
+/** Métricas de un político dentro de una comparación de patrones de voto. */
 interface ComparacionPolitico {
   id: string;
   nombre: string;
@@ -26,6 +27,7 @@ interface ComparacionPolitico {
   porcentajeCoherencia: number;
 }
 
+/** Voto de cada político comparado (por id) en una ley votada por dos o más de ellos. */
 interface ComparacionLey {
   leyId: string;
   leyTitulo: string;
@@ -33,6 +35,7 @@ interface ComparacionLey {
   coinciden: boolean;
 }
 
+/** Resultado agregado de comparar los patrones de voto de varios políticos. */
 interface ComparacionVotos {
   politicos: ComparacionPolitico[];
   leyesComparadas: ComparacionLey[];
@@ -41,6 +44,7 @@ interface ComparacionVotos {
   indiceCoincidencia: number;
 }
 
+/** @returns las clases de color del badge de voto según su sentido (FAVOR/CONTRA/ABSTENCION). */
 const votoColor = (voto: string) => {
   switch ((voto || '').toUpperCase()) {
     case 'FAVOR': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -50,6 +54,7 @@ const votoColor = (voto: string) => {
   }
 };
 
+/** Barra apilada con la proporción de votos a favor, en contra y en abstención. */
 const DistribucionBar: React.FC<{ favor: number; contra: number; abstencion: number }> = ({ favor, contra, abstencion }) => {
   const total = favor + contra + abstencion || 1;
   return (
@@ -61,6 +66,11 @@ const DistribucionBar: React.FC<{ favor: number; contra: number; abstencion: num
   );
 };
 
+/**
+ * Selector de dos o más políticos con búsqueda tolerante a acentos, y
+ * comparación de sus patrones de voto: índice de coincidencia, métricas
+ * individuales y tabla de leyes votadas en común.
+ */
 const ComparacionPage: React.FC = () => {
   const [politicos, setPoliticos] = useState<PoliticoItem[]>([]);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
@@ -104,6 +114,7 @@ const ComparacionPage: React.FC = () => {
     setSeleccionados((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
+  /** Solicita la comparación de patrones de voto de los políticos seleccionados (mínimo dos). */
   const comparar = async () => {
     if (seleccionados.length < 2) return;
     setIsLoading(true);

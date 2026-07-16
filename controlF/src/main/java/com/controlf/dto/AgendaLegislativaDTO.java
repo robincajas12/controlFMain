@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Agenda / calendario legislativo (CF-013): eventos ordenados por fecha con totales de apoyo.
+ * Agenda legislativa: eventos ordenados por fecha, con los totales que los resumen.
  */
 @Data
 @Builder

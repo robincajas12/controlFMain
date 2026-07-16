@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import SearchableSelect from '../components/SearchableSelect';
 
+/** Opción mínima (id + etiqueta) para poblar un {@link SearchableSelect}. */
 interface SimpleItem {
   id: string;
   label: string;
 }
 
+/**
+ * Formulario administrativo para crear vínculos de coherencia entre una
+ * promesa de campaña y una ley: elige político, promesa (o crea una
+ * nueva) y ley, define el impacto esperado del voto y registra el
+ * análisis técnico que sustenta el vínculo.
+ */
 const MotorCoherencia: React.FC = () => {
   const { apiFetch } = useAuth();
   const [politicos, setPoliticos] = useState<SimpleItem[]>([]);
@@ -22,6 +29,7 @@ const MotorCoherencia: React.FC = () => {
   const [nuevaPromesaCategoria, setNuevaPromesaCategoria] = useState('');
   const [nuevaPromesaFecha, setNuevaPromesaFecha] = useState('');
 
+  // Carga las opciones de políticos y leyes disponibles para los selectores.
   useEffect(() => {
     const loadMotorData = async () => {
       try {
@@ -42,6 +50,7 @@ const MotorCoherencia: React.FC = () => {
     void loadMotorData();
   }, [apiFetch]);
 
+  // Recarga las promesas disponibles cada vez que cambia el político seleccionado.
   useEffect(() => {
     const loadPromesas = async () => {
       if (!selectedPolitico) {
@@ -65,6 +74,7 @@ const MotorCoherencia: React.FC = () => {
     void loadPromesas();
   }, [apiFetch, selectedPolitico]);
 
+  /** Crea el vínculo promesa-ley con el impacto y análisis definidos en el formulario. */
   const handleGenerarVinculo = async () => {
     if (!selectedPromesa || !selectedLey) return;
 
@@ -76,7 +86,7 @@ const MotorCoherencia: React.FC = () => {
           promesaId: parseInt(selectedPromesa),
           leyId: parseInt(selectedLey),
           impactoEsperado: impacto,
-          nivelCoherencia: 'CUMPLE', // Simplificado
+          nivelCoherencia: 'CUMPLE', // El nivel se fija manualmente en este formulario; no se calcula.
           analisis: analisis
         })
       });
@@ -87,6 +97,7 @@ const MotorCoherencia: React.FC = () => {
     }
   };
 
+  /** Registra una nueva promesa para el político seleccionado y refresca la lista de promesas. */
   const handleAgregarPromesa = async () => {
     if (!selectedPolitico || !nuevaPromesaDescripcion.trim()) return;
 

@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Entrada persistida del historial de cambios de patrimonio/antecedentes de un político (CF-005),
- * derivada del campo historialActualizaciones (JSON) ya almacenado en la base de datos.
+ * Entrada del historial de cambios de patrimonio/antecedentes de un
+ * político, derivada del campo {@code historialActualizaciones} (JSON)
+ * almacenado en la base de datos.
  */
 @Data
 @Builder

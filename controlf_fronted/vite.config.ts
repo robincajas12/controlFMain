@@ -18,10 +18,6 @@ export default ({ mode }: {mode:string}) => {
           target: apiUrl,
           changeOrigin: true,
         },
-        '/admin': {
-          target: apiUrl,
-          changeOrigin: true,
-        },
       },
     },
   })

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
+/**
+ * Página de resumen general: estadísticas clave y actividad reciente de
+ * la plataforma, obtenidas de `/api/dashboard/stats`.
+ */
 const DashboardPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +40,6 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-b-4 border-b-accent-blue">
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Políticos Registrados</div>
@@ -60,7 +63,6 @@ const DashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Actividad Reciente */}
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
             <h3 className="font-bold text-primary-navy uppercase tracking-wide flex items-center gap-2">
@@ -86,7 +88,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Accesos Rápidos */}
         <div className="space-y-6">
           <div className="bg-primary-navy p-8 rounded-2xl text-white shadow-xl relative overflow-hidden group">
              <div className="relative z-10">

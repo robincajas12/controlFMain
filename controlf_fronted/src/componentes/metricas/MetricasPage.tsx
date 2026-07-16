@@ -5,6 +5,13 @@ interface MetricaItem {
   valor: number;
 }
 
+/**
+ * Endpoint: GET /api/dashboard/metricas
+ * Query Params: ?categoria={string}&estado={string}&desde={yyyy-MM-dd}&hasta={yyyy-MM-dd}
+ *
+ * Métricas de cumplimiento agregadas, ya filtradas por el backend según
+ * los parámetros de la consulta.
+ */
 interface Metricas {
   categoriaFiltro: string | null;
   estadoFiltro: string | null;
@@ -44,6 +51,8 @@ const SinDatos: React.FC = () => (
   <p className="text-sm text-slate-400 italic">Sin datos para los filtros actuales.</p>
 );
 
+// Barras horizontales de referencia, usadas como vista "barras" y como
+// alternativa de RadarChart cuando hay menos de 3 categorías.
 const HorizontalBars: React.FC<{ datos: MetricaItem[]; sufijo?: string; max?: number }> = ({ datos, sufijo = '', max }) => {
   const maximo = max ?? Math.max(1, ...datos.map((d) => d.valor));
   if (datos.length === 0) {
@@ -79,6 +88,7 @@ const formatearMes = (etiqueta: string): { mes: string; anio: string } => {
   return { mes: MESES_CORTOS[idx] ?? m[2], anio: `'${m[1].slice(2)}` };
 };
 
+// Columnas verticales para la serie temporal de votos por mes (eje X cronológico).
 const ColumnChart: React.FC<{ datos: MetricaItem[] }> = ({ datos }) => {
   // Animación de crecimiento: al montar, las barras parten de 0 y transicionan
   // hasta su altura real. El componente se remonta en cada carga (skeleton de
@@ -606,6 +616,7 @@ const VISTAS: { id: Vista; label: string }[] = [
   { id: 'tabla', label: 'Tabla' },
 ];
 
+// Selector de la forma de visualización activa, compartido por todas las tarjetas de métricas.
 const SelectorVista: React.FC<{ vista: Vista; onChange: (v: Vista) => void }> = ({ vista, onChange }) => (
   <div className="inline-flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1" role="tablist" aria-label="Forma de visualización">
     {VISTAS.map((v) => {
@@ -678,6 +689,12 @@ const AnimCard: React.FC<{ titulo: string; delay?: number; children: React.React
   </div>
 );
 
+/**
+ * Explorador de métricas de cumplimiento: filtros por categoría, estado
+ * y rango de fechas, y una misma serie de datos representable en seis
+ * formas de visualización intercambiables (barras, columnas, circular,
+ * radar, línea/área o tabla).
+ */
 const MetricasPage: React.FC = () => {
   const [metricas, setMetricas] = useState<Metricas | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -701,6 +718,7 @@ const MetricasPage: React.FC = () => {
       .catch((err) => console.error('Error al cargar filtros:', err));
   }, []);
 
+  // Solicita las métricas con los filtros dados; memoizada para poder usarse como dependencia estable de un efecto.
   const cargarMetricas = useMemo(
     () => async (params: { categoria: string; estado: string; desde: string; hasta: string }) => {
       setIsLoading(true);

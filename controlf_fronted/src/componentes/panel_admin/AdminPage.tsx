@@ -4,6 +4,7 @@ import MantenimientoSistema from './COMPONENTE_MANTENIMIENTO_DEL_SISTEMA/Manteni
 import RegistroManual from './RegistroManual';
 import { useAuth } from '../../context/AuthContext';
 
+/** Asambleísta disponible en la fuente externa, candidato a importación. */
 interface AssemblyMember {
   id: number | string;
   firstName: string;
@@ -11,12 +12,14 @@ interface AssemblyMember {
   territorial?: string;
 }
 
+/** Votación de un asambleísta en la fuente externa, seleccionable para importar. */
 interface VotingItem {
   id: number;
   proposalDescription?: string;
   description?: string;
 }
 
+/** Resumen del resultado de una operación de importación. */
 interface ImportResult {
   found: number;
   imported: number;
@@ -24,12 +27,14 @@ interface ImportResult {
   duplicates: number;
 }
 
+/** Ley local candidata a sincronizar su detalle de votación externo. */
 interface LeySyncItem {
   id: number;
   titulo: string;
   externalId: number | null;
 }
 
+/** Avance en vivo de la sincronización masiva de detalle de votación de todas las leyes. */
 interface LeySyncProgress {
   total: number;
   processed: number;
@@ -40,6 +45,7 @@ interface LeySyncProgress {
   status: string;
 }
 
+/** Totales agregados del sistema para el reporte histórico. */
 interface HistoricoData {
   totalLeyes: number;
   totalVotos: number;
@@ -49,6 +55,7 @@ interface HistoricoData {
   leyesEnDebate: number;
 }
 
+/** Estado operativo del sistema consumido por {@link MantenimientoSistema}. */
 interface AdminMaintenanceData {
   id: string;
   titulo: string;
@@ -71,6 +78,15 @@ const defaultMaintenanceData: AdminMaintenanceData = {
   accionesDisponibles: []
 };
 
+/**
+ * Panel de control del administrador: guía de bienvenida, dos flujos
+ * independientes de importación de datos externos (masiva por candidato,
+ * y selectiva por votación), registro manual, motor de coherencia,
+ * reporte histórico agregado y mantenimiento del sistema. Cada bloque se
+ * posiciona visualmente con utilidades `order-*` para presentarlos en un
+ * flujo lógico, sin que ese orden dependa del orden en que están
+ * declarados en el JSX.
+ */
 const AdminPage: React.FC = () => {
   const [mantenimiento, setMantenimiento] = useState<AdminMaintenanceData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +118,7 @@ const AdminPage: React.FC = () => {
   const { apiFetch } = useAuth();
   const ITEMS_PER_PAGE = 20;
 
+  /** Recarga el estado de mantenimiento y el reporte histórico; usada para refrescar tras una acción administrativa. */
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -125,6 +142,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  /** Carga los políticos ya sincronizados en el catálogo local, disponibles para importar sus leyes. */
   const loadImportablePoliticos = async () => {
     try {
       const response = await apiFetch('/api/politicos/importables');
@@ -135,6 +153,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  // Cierra el desplegable de candidatos sincronizados al hacer clic fuera del componente.
   useEffect(() => {
     if (!showPoliticoDropdown) return;
 
@@ -162,6 +181,7 @@ const AdminPage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showMemberDropdown]);
 
+  // Carga inicial: mantenimiento/histórico, asambleístas y candidatos importables, en paralelo.
   useEffect(() => {
     let isMounted = true;
 
@@ -236,6 +256,7 @@ const AdminPage: React.FC = () => {
     };
   }, [apiFetch]);
 
+  /** Ejecuta una acción de mantenimiento (respaldo, limpiar caché, importar leyes) y refresca el estado del sistema. */
   const handleAccionMantenimiento = async (accion: string) => {
     let endpoint = '';
 
@@ -255,6 +276,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  /** Puebla la base de datos con datos de ejemplo; el backend la ignora si ya contiene datos. */
   const handleSeedDatabase = async () => {
     if (!confirm("¿Deseas poblar la base de datos con datos de ejemplo? Esto solo funcionará si la base de datos está vacía.")) return;
 
@@ -281,6 +303,7 @@ const AdminPage: React.FC = () => {
     return fullName.toLowerCase().includes(memberSearch.toLowerCase());
   });
 
+  /** Carga las votaciones disponibles del asambleísta elegido (Camino B) y reinicia la selección previa. */
   const handleMemberChange = async (memberId: string) => {
     setSelectedMemberId(memberId);
     setSelectedVotingIds([]);
@@ -336,6 +359,7 @@ const AdminPage: React.FC = () => {
     setPoliticoImportResult(null);
   };
 
+  /** Sincroniza el catálogo local de políticos con la fuente externa; paso previo obligatorio para ambos caminos de importación. */
   const handleSyncPoliticos = async () => {
     try {
       setIsSyncingPoliticos(true);
@@ -350,6 +374,11 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  /**
+   * Sincronización global (Camino A, paso final): recorre todas las
+   * leyes sincronizables e importa su detalle de votación externo una
+   * por una, actualizando el progreso en vivo tras cada ley procesada.
+   */
   const handleSyncAllLeyes = async () => {
     setIsSyncingAllLeyes(true);
     setSyncProgress({ total: 0, processed: 0, imported: 0, duplicated: 0, ignored: 0, currentLey: '', status: 'Iniciando...'});
@@ -397,6 +426,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  /** Importa las leyes (y sus votaciones) de los candidatos seleccionados (Camino A). */
   const handleImportLeyesPorPoliticos = async () => {
     if (selectedPoliticoIds.length === 0) return;
 
@@ -450,6 +480,7 @@ const AdminPage: React.FC = () => {
     setSelectedVotingIds([]);
   };
 
+  /** Importa únicamente las votaciones marcadas del asambleísta seleccionado (Camino B). */
   const handleImportSelected = async () => {
     if (!selectedMemberId || selectedVotingIds.length === 0) return;
 
@@ -471,6 +502,7 @@ const AdminPage: React.FC = () => {
     }
   };
 
+  /** @returns las clases de color del badge de voto según su sentido (SI/NO/ABSTENCION). */
   const getVoteBadgeClass = (description?: string) => {
     const normalized = (description || '').trim().toUpperCase();
     if (normalized === 'SI') return 'bg-emerald-100 text-emerald-700 border-emerald-200';

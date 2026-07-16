@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Estado de mantenimiento del servidor mostrado en el panel administrativo.
+ */
 @Data
 @Builder
 @NoArgsConstructor

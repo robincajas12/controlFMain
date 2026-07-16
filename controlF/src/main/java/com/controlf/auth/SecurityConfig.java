@@ -17,6 +17,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+/**
+ * Configuración central de Spring Security: autenticación JWT sin estado,
+ * hashing de contraseñas y la matriz de autorización por ruta (qué roles
+ * pueden acceder a qué endpoints).
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -26,11 +31,22 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomUserDetailsService customUserDetailsService;
 
+    /**
+     * @return el encoder BCrypt usado tanto para hashear contraseñas nuevas
+     *         como para verificar credenciales en el login
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Arma un proveedor de autenticación basado en DAO sobre
+     * {@link CustomUserDetailsService} y el encoder de contraseñas dado.
+     *
+     * @param passwordEncoder encoder usado para verificar las credenciales enviadas
+     * @return el gestor de autenticación usado en el login
+     */
     @Bean
     public AuthenticationManager authenticationManager(PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(customUserDetailsService);
@@ -38,6 +54,16 @@ public class SecurityConfig {
         return new ProviderManager(provider);
     }
 
+    /**
+     * Define la política de seguridad HTTP: CSRF deshabilitado (la API es
+     * stateless y basada en tokens, no en cookies), sin sesiones de
+     * servidor, las reglas de autorización por rol/ruta, y el filtro JWT
+     * insertado antes del filtro estándar de usuario/contraseña.
+     *
+     * @param http builder de seguridad a configurar
+     * @return la cadena de filtros resultante
+     * @throws Exception si la configuración de seguridad falla al construirse
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)

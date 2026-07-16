@@ -7,7 +7,12 @@ interface ResultadoVotacionProps {
   total: number;
 }
 
+/**
+ * Desglose visual del resultado de votación de una ley: barras de
+ * proporción para votos a favor, en contra y abstenciones.
+ */
 const ResultadoVotacion: React.FC<ResultadoVotacionProps> = ({ favor, contra, abstencion, total }) => {
+  /** @returns el porcentaje de `val` sobre `total`, o 0 si no hay votos registrados. */
   const getPercentage = (val: number) => (total > 0 ? (val / total) * 100 : 0);
 
   return (

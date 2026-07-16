@@ -16,8 +16,17 @@ import RegisterPage from './componentes/auth/RegisterPage'
 import ProtectedRoute from './componentes/auth/ProtectedRoute'
 import { useAuth } from './context/AuthContext'
 
+/**
+ * Árbol de rutas de la aplicación. El login y el registro quedan fuera del
+ * layout principal; el resto de las páginas cuelgan de `MainLayout` y
+ * algunas requieren autenticación (o un rol específico) vía `ProtectedRoute`.
+ */
 function App() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return null
+  }
 
   return (
     <Routes>

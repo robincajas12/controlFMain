@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+/**
+ * Promesa de campaña de un político.
+ */
 @Data
 @Builder
 @NoArgsConstructor

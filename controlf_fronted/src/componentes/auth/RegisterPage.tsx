@@ -17,8 +17,10 @@ const FRASES = [
   'Poder observado, poder responsable',
 ];
 
-// Roles ya existentes en el sistema. Se ofrecen solo para pruebas de desarrollo;
-// no se crean roles nuevos ni se altera la lógica de permisos.
+/**
+ * Roles ya existentes en el backend, ofrecidos aquí solo para pruebas de
+ * desarrollo (el registro normal debería dejar el rol por defecto).
+ */
 const ROLES_DISPONIBLES = [
   { value: 'CIUDADANO', label: 'Ciudadano' },
   { value: 'ADMIN', label: 'Administrador' },
@@ -34,6 +36,12 @@ interface FieldErrors {
 const inputBaseClass =
   'w-full rounded-xl border bg-slate-50/50 px-4 py-3 text-sm text-slate-800 shadow-sm transition-colors placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2';
 
+/**
+ * Página de registro. Verifica en vivo (con debounce) la disponibilidad
+ * del nombre de usuario y del correo mientras el usuario escribe, valida
+ * la fortaleza de la contraseña, y crea la sesión automáticamente tras
+ * un registro exitoso.
+ */
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
@@ -72,7 +80,7 @@ const RegisterPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Comprobación de disponibilidad del nombre (con retraso para no consultar en cada tecla).
+  // Debounce de 450ms: evita disparar una consulta de disponibilidad en cada tecla.
   useEffect(() => {
     const value = nombre.trim();
     if (value.length < 2) {
@@ -96,7 +104,7 @@ const RegisterPage: React.FC = () => {
           setSugerencias(Array.isArray(data.sugerencias) ? data.sugerencias : []);
         }
       } catch {
-        // La comprobación final ocurre al enviar el formulario; aquí fallamos en silencio.
+        // Se falla en silencio: la comprobación definitiva ocurre al enviar el formulario.
       } finally {
         setIsCheckingNombre(false);
       }
@@ -105,7 +113,7 @@ const RegisterPage: React.FC = () => {
     return () => window.clearTimeout(timeout);
   }, [nombre]);
 
-  // Comprobación de disponibilidad del correo (solo si el formato es válido).
+  // Debounce análogo para el correo; solo consulta si el formato ya es válido.
   useEffect(() => {
     const value = email.trim();
     if (!isValidEmail(value)) {
@@ -127,7 +135,7 @@ const RegisterPage: React.FC = () => {
           setEmailDisponible(typeof data.emailDisponible === 'boolean' ? data.emailDisponible : null);
         }
       } catch {
-        // Silencioso: la validación definitiva es la respuesta del registro.
+        // Se falla en silencio: la validación definitiva es la respuesta del registro.
       } finally {
         setIsCheckingEmail(false);
       }
@@ -176,7 +184,6 @@ const RegisterPage: React.FC = () => {
     setError('');
     setTouched({ nombre: true, email: true, password: true });
 
-    // Se valida antes de enviar; si algo falla, no se envía ni se borra lo ingresado.
     const errores = validar();
     setFieldErrors(errores);
     if (Object.keys(errores).length > 0) {
@@ -229,7 +236,6 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="login-animated-bg min-h-screen w-full flex flex-col items-center justify-center px-4 py-12">
-      {/* Encabezado corporativo */}
       <header className="mb-10 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-white/80 shadow-sm backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-violet-300"></span>
@@ -241,7 +247,6 @@ const RegisterPage: React.FC = () => {
         <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
       </header>
 
-      {/* Tarjeta de registro */}
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60">
         <h2 className="text-2xl font-black tracking-tight text-primary-navy">Crear cuenta</h2>
         <p className="mt-2 text-sm text-slate-500">
@@ -255,7 +260,6 @@ const RegisterPage: React.FC = () => {
             </p>
           )}
 
-          {/* Nombre de usuario */}
           <div className="space-y-1.5">
             <label htmlFor="nombre" className="block text-xs font-bold uppercase tracking-wide text-slate-500">
               Nombre de usuario
@@ -302,7 +306,6 @@ const RegisterPage: React.FC = () => {
             )}
           </div>
 
-          {/* Correo electrónico */}
           <div className="space-y-1.5">
             <label htmlFor="email" className="block text-xs font-bold uppercase tracking-wide text-slate-500">
               Correo electrónico
@@ -331,7 +334,6 @@ const RegisterPage: React.FC = () => {
             ) : null}
           </div>
 
-          {/* Contraseña */}
           <div className="space-y-1.5">
             <label htmlFor="password" className="block text-xs font-bold uppercase tracking-wide text-slate-500">
               Contraseña
@@ -374,7 +376,6 @@ const RegisterPage: React.FC = () => {
             )}
           </div>
 
-          {/* Rol (solo pruebas) */}
           <div className="space-y-1.5">
             <label htmlFor="rol" className="block text-xs font-bold uppercase tracking-wide text-slate-500">
               Rol <span className="font-medium normal-case text-slate-400">(solo para pruebas)</span>
@@ -410,7 +411,6 @@ const RegisterPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Frases rotativas */}
       <div className="mt-10 flex h-12 items-center justify-center px-4">
         <p
           className={`max-w-lg text-center text-base sm:text-lg font-medium italic text-white/85 drop-shadow-sm transition-opacity duration-[600ms] ease-in-out ${

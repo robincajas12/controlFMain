@@ -8,8 +8,9 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Suscripción de un usuario para recibir alertas de nuevas leyes o votaciones (CF-015).
- * Si categoria es nula, el usuario recibe alertas de todas las categorías.
+ * Suscripción de un usuario para recibir alertas de nuevas leyes o
+ * votaciones. Si {@code categoria} es nula, el usuario recibe alertas de
+ * todas las categorías.
  */
 @Entity
 @Table(name = "suscripciones")
@@ -26,12 +27,15 @@ public class Suscripcion {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    // Categoría suscrita; null = todas las categorías.
+    /** Categoría suscrita; {@code null} significa todas las categorías. */
     private String categoria;
 
     @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
+    /**
+     * Fija la fecha de creación al momento actual si no se especificó una.
+     */
     @PrePersist
     protected void onCreate() {
         if (this.fechaCreacion == null) {

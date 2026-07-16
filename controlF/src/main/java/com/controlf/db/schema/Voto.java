@@ -7,6 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+/**
+ * Voto emitido por un político sobre una ley, incluyendo si asistió a la sesión.
+ */
 @Entity
 @Table(name = "votos")
 @Data

@@ -9,6 +9,11 @@ interface ContenidoLeyProps {
   isTraduciendo?: boolean;
 }
 
+/**
+ * Sección de contenido de la ley (RF-02): resumen ejecutivo en lenguaje
+ * sencillo e impacto social. Si aún no existe un resumen simplificado,
+ * ofrece generarlo mediante IA a través de `onTraducir`.
+ */
 const ContenidoLey: React.FC<ContenidoLeyProps> = ({ resumenEjecutivo, impactoSocial, onTraducir, isTraduciendo }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">

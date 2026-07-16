@@ -20,6 +20,10 @@ interface BarraBusquedaProps {
   onExport: () => void;
 }
 
+/**
+ * Encabezado del directorio de políticos: título, búsqueda por texto,
+ * filtros tipo dropdown y exportación de reporte.
+ */
 const BarraBusqueda: React.FC<BarraBusquedaProps> = ({
   titulo,
   subtitulo,

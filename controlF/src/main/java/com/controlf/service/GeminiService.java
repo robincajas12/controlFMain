@@ -17,6 +17,10 @@ import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
+/**
+ * Cliente de la API de Gemini usado para traducir el texto legal de una
+ * ley a una explicación en lenguaje sencillo para la ciudadanía.
+ */
 @Service
 @Slf4j
 public class GeminiService {
@@ -25,6 +29,11 @@ public class GeminiService {
     private final String apiKey;
     private final String model;
 
+    /**
+     * @param restTemplate cliente HTTP compartido usado para llamar a la API de Gemini
+     * @param apiKey clave de API de Gemini (vacía si no está configurada)
+     * @param model identificador del modelo de Gemini a usar
+     */
     public GeminiService(
             RestTemplate restTemplate,
             @Value("${app.gemini.api-key:}") String apiKey,
@@ -34,6 +43,17 @@ public class GeminiService {
         this.model = model;
     }
 
+    /**
+     * Solicita a Gemini una explicación en lenguaje sencillo del contenido
+     * de una ley.
+     *
+     * @param titulo título de la ley
+     * @param descripcionOriginal texto legal original a explicar
+     * @return el texto explicativo generado por el modelo
+     * @throws ResponseStatusException 503 si la API key no está
+     *         configurada, si la respuesta de Gemini es inválida o vacía,
+     *         o si ocurre un error de comunicación
+     */
     public String generarExplicacion(String titulo, String descripcionOriginal) {
         if (apiKey == null || apiKey.isBlank()) {
             log.error("La API key de Gemini no está configurada.");
@@ -84,16 +104,25 @@ public class GeminiService {
         }
     }
 
+    /**
+     * Cuerpo de la petición enviada a la API de Gemini (formato {@code generateContent}).
+     */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     public static class GeminiRequest {
         private List<Content> contents;
 
+        /**
+         * @param prompt texto de instrucción a enviar al modelo
+         */
         public GeminiRequest(String prompt) {
             this.contents = List.of(new Content(List.of(new Part(prompt))));
         }
 
+        /**
+         * Contenido de un turno de la conversación enviado a Gemini.
+         */
         @Data
         @NoArgsConstructor
         @AllArgsConstructor
@@ -101,6 +130,9 @@ public class GeminiService {
             private List<Part> parts;
         }
 
+        /**
+         * Fragmento de texto dentro de un {@link Content}.
+         */
         @Data
         @NoArgsConstructor
         @AllArgsConstructor
@@ -109,6 +141,9 @@ public class GeminiService {
         }
     }
 
+    /**
+     * Respuesta recibida de la API de Gemini (formato {@code generateContent}).
+     */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -116,6 +151,9 @@ public class GeminiService {
     public static class GeminiResponse {
         private List<Candidate> candidates;
 
+        /**
+         * Una de las posibles respuestas generadas por el modelo.
+         */
         @Data
         @NoArgsConstructor
         @AllArgsConstructor
@@ -124,6 +162,9 @@ public class GeminiService {
             private Content content;
         }
 
+        /**
+         * Contenido de una respuesta candidata.
+         */
         @Data
         @NoArgsConstructor
         @AllArgsConstructor
@@ -132,6 +173,9 @@ public class GeminiService {
             private List<Part> parts;
         }
 
+        /**
+         * Fragmento de texto dentro del contenido de una respuesta.
+         */
         @Data
         @NoArgsConstructor
         @AllArgsConstructor

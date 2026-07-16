@@ -1,3 +1,6 @@
+/**
+ * Ítem individual del menú lateral de navegación del perfil de ley.
+ */
 export interface ItemNavegacion {
   id: string;           // Identificador único del item
   label: string;        // Texto del item de navegación

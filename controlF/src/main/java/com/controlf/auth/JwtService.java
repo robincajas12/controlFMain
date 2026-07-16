@@ -15,6 +15,12 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
+/**
+ * Emite y valida los JWT usados para la autenticación sin estado (stateless).
+ * El secreto configurado se hashea con SHA-256 antes de usarse, de modo que
+ * claves de firma de cualquier longitud queden normalizadas a un tamaño de
+ * clave HMAC válido.
+ */
 @Service
 public class JwtService {
 
@@ -26,6 +32,11 @@ public class JwtService {
 
     private SecretKey secretKey;
 
+    /**
+     * Deriva la clave de firma HMAC a partir del secreto configurado,
+     * usando como respaldo un secreto de desarrollo integrado cuando no
+     * se define ninguno.
+     */
     @PostConstruct
     void init() {
         String normalizedSecret = jwtSecret == null ? "" : jwtSecret.trim();
@@ -41,6 +52,14 @@ public class JwtService {
         }
     }
 
+    /**
+     * Construye un JWT firmado que contiene el email y el rol del usuario,
+     * válido por {@code app.jwt.expiration-hours}.
+     *
+     * @param email email del sujeto a incluir en el token
+     * @param role rol a incluir en el token
+     * @return el JWT firmado en formato compacto
+     */
     public String generateToken(String email, String role) {
         Instant now = Instant.now();
         Instant expiry = now.plusSeconds(expirationHours * 3600);
@@ -52,6 +71,13 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Verifica la firma y expiración del token y extrae sus claims.
+     *
+     * @param token el JWT en formato compacto a validar
+     * @return los claims del token
+     * @throws io.jsonwebtoken.JwtException si el token es inválido, expiró o está mal formado
+     */
     public Claims parseToken(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)

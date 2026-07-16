@@ -1,3 +1,7 @@
+/**
+ * Fila de la tabla de auditoría de coherencia: cruce entre el voto de un
+ * político en una ley y sus promesas de campaña relacionadas.
+ */
 export interface FilaAuditoria {
   id: string;                    // Identificador único del político
   nombre: string;                // Nombre del político

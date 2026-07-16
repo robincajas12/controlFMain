@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Perfil completo de un político para su vista de detalle.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,12 +24,12 @@ public class PerfilPoliticoDTO {
     private boolean estaActivo;
     private Double porcentajeCoherencia;
     private String estadoEtiqueta;
-    // Índice de reputación ciudadana (promedio de calificaciones 1-5) y su etiqueta cualitativa.
+    /** Índice de reputación ciudadana: promedio de calificaciones (1-5). */
     private Double indiceReputacion;
     private long totalCalificaciones;
     private String etiquetaReputacion;
     private List<HistorialCoherenciaDTO> historial;
-    // Historial persistente de cambios en patrimonio/antecedentes (CF-005).
+    /** Historial persistente de cambios en patrimonio/antecedentes. */
     private List<HistorialCambioPerfilDTO> historialCambios;
     private List<ComentarioDebateDTO> comentarios;
 }

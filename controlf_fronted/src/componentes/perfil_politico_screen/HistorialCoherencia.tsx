@@ -5,7 +5,12 @@ interface HistorialCoherenciaProps {
   historial: HistorialType[];
 }
 
+/**
+ * Tabla que cruza cada promesa de campaña con el voto real del político y
+ * el nivel de coherencia resultante.
+ */
 const HistorialCoherencia: React.FC<HistorialCoherenciaProps> = ({ historial }) => {
+  /** @returns clases de color según si el resultado es favorable, desfavorable o ambiguo */
   const getStatusStyle = (resultado: string) => {
     switch (resultado.toUpperCase()) {
       case 'CUMPLE':
@@ -19,6 +24,7 @@ const HistorialCoherencia: React.FC<HistorialCoherenciaProps> = ({ historial }) 
     }
   };
 
+  /** @returns el ícono correspondiente al resultado (favorable, desfavorable o ambiguo) */
   const getStatusIcon = (resultado: string) => {
     switch (resultado.toUpperCase()) {
       case 'CUMPLE':

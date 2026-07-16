@@ -6,6 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Auditoría de coherencia de una ley: por cada político vinculado a
+ * través de una promesa de campaña, su voto y el nivel de coherencia resultante.
+ */
 @Data
 @Builder
 @NoArgsConstructor

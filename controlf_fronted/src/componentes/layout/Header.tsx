@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+/**
+ * Barra superior y menú lateral de navegación. Los ítems visibles dependen
+ * de la sesión y el rol del usuario (alertas requiere sesión; validación y
+ * admin requieren los roles correspondientes).
+ */
 const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,12 +26,12 @@ const Header = () => {
     ...(role === 'ADMIN' ? [{ name: 'Admin', path: '/admin' }] : []),
   ];
 
-  // El panel lateral se cierra automáticamente al cambiar de ruta.
+  // Cierra el panel lateral automáticamente al navegar a otra ruta.
   useEffect(() => {
     setMenuAbierto(false);
   }, [location.pathname]);
 
-  // Cierre con la tecla Escape mientras el panel está abierto.
+  // Permite cerrar el panel con Escape mientras está abierto.
   useEffect(() => {
     if (!menuAbierto) return;
     const onKey = (e: KeyboardEvent) => {
@@ -75,14 +80,12 @@ const Header = () => {
         </div>
       </header>
 
-      {/* Fondo semitransparente: cierra el panel al hacer clic fuera */}
       <div
         className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ${menuAbierto ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
         onClick={() => setMenuAbierto(false)}
         aria-hidden="true"
       ></div>
 
-      {/* Panel lateral desplegable con la navegación (reemplaza la barra superior deslizante) */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex w-64 max-w-[80vw] flex-col bg-primary-navy text-white shadow-2xl transition-transform duration-300 ease-out ${menuAbierto ? 'translate-x-0' : '-translate-x-full'}`}
         aria-hidden={!menuAbierto}

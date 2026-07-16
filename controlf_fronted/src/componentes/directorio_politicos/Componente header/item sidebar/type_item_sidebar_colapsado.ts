@@ -1,3 +1,6 @@
+/**
+ * Ítem individual del sidebar colapsado del directorio de políticos.
+ */
 export interface ItemSidebarColapsado {
   id: string;          // Identificador único del item
   icono: string;       // Nombre o referencia del ícono

@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Vista resumida de un político para listados en forma de tarjeta ("carta").
+ */
 @Data
 @Builder
 @NoArgsConstructor

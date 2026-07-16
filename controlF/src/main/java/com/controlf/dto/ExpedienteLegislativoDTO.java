@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Vista resumida de una ley para listados de expedientes legislativos.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -13,7 +16,8 @@ public class ExpedienteLegislativoDTO {
     private String id;
     private String codigoExpediente;
     private String titulo;
-    private String tituloLey; // Alias para frontend
+    /** Alias de {@code titulo} esperado por el frontend. */
+    private String tituloLey;
     private String categoria;
     private String estado;
     private boolean estaAprobado;

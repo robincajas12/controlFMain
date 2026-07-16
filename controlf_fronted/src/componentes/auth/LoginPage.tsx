@@ -25,6 +25,11 @@ const FRASES = [
   'Poder observado, poder responsable',
 ];
 
+/**
+ * Página de inicio de sesión. Valida el formulario en el cliente antes de
+ * enviarlo y redirige a la ruta de origen (`location.state.from`) tras un
+ * login exitoso.
+ */
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,7 +81,6 @@ const LoginPage: React.FC = () => {
     event.preventDefault();
     setError('');
 
-    // Se valida antes de enviar; no se borra lo ingresado si algo falla.
     const errores = validar();
     setFieldErrors(errores);
     if (Object.keys(errores).length > 0) {
@@ -111,7 +115,6 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="login-animated-bg min-h-screen w-full flex flex-col items-center justify-center px-4 py-12">
-      {/* Encabezado corporativo */}
       <header className="mb-10 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.25em] text-white/80 shadow-sm backdrop-blur-sm">
           <span className="h-1.5 w-1.5 rounded-full bg-violet-300"></span>
@@ -123,7 +126,6 @@ const LoginPage: React.FC = () => {
         <div className="mx-auto mt-4 h-px w-24 bg-gradient-to-r from-transparent via-white/40 to-transparent"></div>
       </header>
 
-      {/* Tarjeta de login */}
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/60">
         <h2 className="text-2xl font-black tracking-tight text-primary-navy">Iniciar sesión</h2>
         <p className="mt-2 text-sm text-slate-500">
@@ -196,7 +198,6 @@ const LoginPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Frases rotativas */}
       <div className="mt-10 flex h-12 items-center justify-center px-4">
         <p
           className={`max-w-lg text-center text-base sm:text-lg font-medium italic text-white/85 drop-shadow-sm transition-opacity duration-[600ms] ease-in-out ${

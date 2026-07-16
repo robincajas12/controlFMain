@@ -7,6 +7,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Vínculo de coherencia entre una promesa de campaña y una ley: registra
+ * el impacto esperado, el nivel de coherencia resultante y el análisis
+ * que lo respalda.
+ */
 @Entity
 @Table(name = "vinculos_promesa_ley")
 @Data

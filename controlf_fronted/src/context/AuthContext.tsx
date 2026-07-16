@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
+/** Datos del usuario autenticado. */
 export interface AuthUser {
   id: number;
   email: string;
@@ -11,6 +12,7 @@ interface AuthContextType {
   user: AuthUser | null;
   role: string | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   login: (token: string, user: AuthUser) => void;
   logout: () => void;
   apiFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -18,8 +20,13 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * Provee el estado de sesión a toda la aplicación, persistiendo el token
+ * y el usuario en `localStorage` para sobrevivir a recargas de página.
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedToken = window.localStorage.getItem('auth_token');
@@ -32,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.localStorage.removeItem('auth_user');
       }
     }
+    setIsLoading(false);
   }, []);
 
   const login = (token: string, nextUser: AuthUser) => {
@@ -46,6 +54,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
   };
 
+  /**
+   * Envoltorio de `fetch` que adjunta el token de sesión como header
+   * `Authorization` cuando hay uno guardado y el llamador no definió el
+   * suyo propio.
+   */
   const apiFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const token = window.localStorage.getItem('auth_token');
     const headers = new Headers(init?.headers || {});
@@ -60,16 +73,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       role: user?.rol ?? null,
       isAuthenticated: Boolean(user),
+      isLoading,
       login,
       logout,
       apiFetch,
     }),
-    [user]
+    [user, isLoading]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
+/**
+ * Hook de acceso al contexto de autenticación.
+ *
+ * @throws Error si se usa fuera de un `AuthProvider`
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

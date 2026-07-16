@@ -26,6 +26,12 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * Lógica de negocio para leyes: perfiles completos, listados filtrados y
+ * paginados, agenda legislativa, seguimiento de debates, comentarios y
+ * calificaciones ciudadanas, y sincronización del detalle de votación con
+ * la fuente externa.
+ */
 @Service
 @RequiredArgsConstructor
 public class LeyService {
@@ -40,10 +46,26 @@ public class LeyService {
 
     private static final int CALIFICACION_MAXIMA = 5;
 
+    /**
+     * @return las categorías y estados disponibles para filtrar leyes
+     */
     public FiltrosLeyDTO getFiltros() {
         return buildFiltrosLeyDTO();
     }
 
+    /**
+     * Busca leyes paginadas, aplicando de forma acumulativa los filtros de
+     * texto libre (título o código), categoría y estado que se hayan
+     * indicado. Ante cualquier error de consulta devuelve una página
+     * vacía en lugar de propagar la excepción.
+     *
+     * @param pagina número de página (base 1)
+     * @param size cantidad de resultados por página
+     * @param termino texto de búsqueda opcional sobre título o código
+     * @param categoria filtro opcional por categoría exacta
+     * @param estado filtro opcional por estado (nombre del enum, insensible a mayúsculas)
+     * @return la página de leyes resultante
+     */
   public GrillaLeyesDTO getLeyesFiltradas(int pagina, int size, String termino, String categoria, String estado) {
     try {
         org.springframework.data.jpa.domain.Specification<Ley> spec = (root, query, cb) -> cb.conjunction();
@@ -65,7 +87,7 @@ public class LeyService {
                 spec = spec.and((root, query, cb) ->
                         cb.equal(root.get("estado"), EstadoLey.valueOf(estado.toUpperCase())));
             } catch (IllegalArgumentException e) {
-                // Estado inválido, ignorar filtro
+                // Estado inválido: se ignora el filtro y se devuelve sin restringir por estado.
             }
         }
 
@@ -101,6 +123,12 @@ public class LeyService {
                 .build();
     }
 }
+    /**
+     * @param id identificador de la ley
+     * @return el perfil completo de la ley: contenido, resultado de
+     *         votación, auditoría de coherencia, debate ciudadano y
+     *         resumen de coincidencia con el detalle de votación externo
+     */
     public PerfilLeyDTO getFullPerfilLey(Integer id) {
         return PerfilLeyDTO.builder()
                 .contenido(getContenidoLey(id))
@@ -111,6 +139,9 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * @return todas las leyes representadas como expedientes legislativos, sin paginar
+     */
     public List<ExpedienteLegislativoDTO> getAllLeyesAsExpedientes() {
         return leyRepository.findAll().stream()
                 .map(LeyService::mapToExpedienteDTO)
@@ -118,8 +149,11 @@ public class LeyService {
     }
 
     /**
-     * Agenda / calendario legislativo (CF-013). Construye eventos cronológicos a partir de datos
-     * reales: el ingreso de cada expediente y la última votación registrada por ley.
+     * Construye la agenda legislativa a partir de eventos reales: el
+     * ingreso de cada expediente y la última votación registrada por ley,
+     * ordenados cronológicamente en forma descendente.
+     *
+     * @return la agenda con sus eventos y los totales de ingresos y votaciones
      */
     public AgendaLegislativaDTO getAgendaLegislativa() {
         List<EventoAgendaDTO> eventos = new ArrayList<>();
@@ -164,7 +198,7 @@ public class LeyService {
             }
         }
 
-        // Orden cronológico descendente (las fechas ISO yyyy-MM-dd ordenan lexicográficamente).
+        // Orden cronológico descendente: las fechas ISO yyyy-MM-dd ordenan lexicográficamente.
         eventos.sort((a, b) -> b.getFecha().compareTo(a.getFecha()));
 
         return AgendaLegislativaDTO.builder()
@@ -176,9 +210,14 @@ public class LeyService {
     }
 
     /**
-     * Seguimiento a debates y transcripciones (CF-014). Devuelve las leyes con su texto oficial
-     * (transcripción / exposición de motivos) y su resumen simplificado, junto al resultado de la
-     * votación. Se puede filtrar por estado ("EN_DEBATE" agrupa DEBATE y EN_DEBATE).
+     * Lista las leyes en seguimiento de debate junto a su texto oficial
+     * (transcripción / exposición de motivos), su resumen simplificado y
+     * el resultado de la votación, ordenadas por fecha de ingreso
+     * descendente (las leyes sin fecha quedan al final).
+     *
+     * @param estadoFiltro filtro opcional por estado; {@code "EN_DEBATE"}
+     *                      agrupa los estados {@code DEBATE} y {@code EN_DEBATE}
+     * @return los debates legislativos que coinciden con el filtro
      */
     public List<DebateLegislativoDTO> getDebatesLegislativos(String estadoFiltro) {
         return leyRepository.findAll().stream()
@@ -195,6 +234,12 @@ public class LeyService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @param ley ley a evaluar
+     * @param estadoFiltro filtro de estado a aplicar; {@code null}, vacío
+     *                      o {@code "TODOS"} coincide con cualquier estado
+     * @return {@code true} si el estado de la ley coincide con el filtro
+     */
     private boolean coincideEstadoDebate(Ley ley, String estadoFiltro) {
         if (estadoFiltro == null || estadoFiltro.isBlank() || estadoFiltro.equalsIgnoreCase("TODOS")) {
             return true;
@@ -209,6 +254,10 @@ public class LeyService {
         }
     }
 
+    /**
+     * @param ley ley a convertir
+     * @return el DTO de debate legislativo con el desglose de votos de la ley
+     */
     private DebateLegislativoDTO mapToDebateDTO(Ley ley) {
         long favor = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.FAVOR);
         long contra = votoRepository.countByLeyIdAndTipoVoto(ley.getId(), TipoVoto.CONTRA);
@@ -231,6 +280,13 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * Actualiza la categoría asignada a una ley.
+     *
+     * @param leyId identificador de la ley
+     * @param request nueva categoría
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     @Transactional
     public void actualizarCategoriaLey(Integer leyId, CategoriaLeyRequestDTO request) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
@@ -238,6 +294,14 @@ public class LeyService {
         leyRepository.save(ley);
     }
 
+    /**
+     * Actualiza el estado del proceso legislativo de una ley.
+     *
+     * @param leyId identificador de la ley
+     * @param request nuevo estado (nombre del enum {@link EstadoLey})
+     * @throws java.util.NoSuchElementException si la ley no existe
+     * @throws IllegalArgumentException si el estado no es válido
+     */
     @Transactional
     public void actualizarEstadoLey(Integer leyId, EstadoLeyRequestDTO request) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
@@ -245,6 +309,16 @@ public class LeyService {
         leyRepository.save(ley);
     }
 
+    /**
+     * Corrige el registro de asistencia de un voto puntual, validando que
+     * pertenezca a la ley indicada.
+     *
+     * @param leyId identificador de la ley
+     * @param votoId identificador del voto
+     * @param request nuevo valor de asistencia
+     * @throws java.util.NoSuchElementException si la ley o el voto no existen
+     * @throws IllegalArgumentException si el voto no pertenece a la ley indicada
+     */
     @Transactional
     public void actualizarAsistenciaVoto(Integer leyId, Integer votoId, AsistenciaVotoRequestDTO request) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
@@ -256,6 +330,14 @@ public class LeyService {
         votoRepository.save(voto);
     }
 
+    /**
+     * Publica un comentario ciudadano sobre una ley.
+     *
+     * @param leyId identificador de la ley
+     * @param request texto y puntaje del comentario
+     * @param currentUserId identificador del usuario autor
+     * @throws java.util.NoSuchElementException si la ley o el usuario no existen
+     */
     public void addComentario(Integer leyId, ComentarioRequestDTO request, Integer currentUserId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
@@ -272,6 +354,14 @@ public class LeyService {
         leyRepository.save(ley);
     }
 
+    /**
+     * Registra la calificación de un usuario sobre una ley.
+     *
+     * @param leyId identificador de la ley
+     * @param request valor de la calificación
+     * @param currentUserId identificador del usuario autor
+     * @throws java.util.NoSuchElementException si la ley o el usuario no existen
+     */
     public void addCalificacion(Integer leyId, CalificacionRequestDTO request, Integer currentUserId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
@@ -286,6 +376,11 @@ public class LeyService {
         leyRepository.save(ley);
     }
 
+    /**
+     * @param leyId identificador de la ley
+     * @return el contenido explicativo de la ley (resumen, impacto social, estado, categoría)
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     public ContenidoLeyDTO getContenidoLey(Integer leyId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         return ContenidoLeyDTO.builder()
@@ -298,22 +393,37 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * Genera (y cachea) una explicación en lenguaje sencillo del contenido
+     * de la ley. Si ya existe una descripción simplificada, la devuelve
+     * directamente sin volver a llamar al modelo de lenguaje.
+     *
+     * @param id identificador de la ley
+     * @return el contenido explicativo, ya sea el existente o el recién generado
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     @Transactional
     public ContenidoLeyDTO explicarLey(Integer id) {
         Ley ley = leyRepository.findById(id).orElseThrow();
-        
+
         if (ley.getDescripcionSimplificada() != null && !ley.getDescripcionSimplificada().isBlank()) {
             return getContenidoLey(id);
         }
-        
+
         String explicacion = geminiService.generarExplicacion(ley.getTitulo(), ley.getDescripcionOriginal());
         ley.setDescripcionSimplificada(explicacion);
         leyRepository.save(ley);
-        
+
         return getContenidoLey(id);
     }
 
-
+    /**
+     * @param leyId identificador de la ley
+     * @return el debate ciudadano de la ley, con su puntuación promedio y
+     *         solo los comentarios que son públicos (ver
+     *         {@link PoliticoService#esComentarioPublico})
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     public DebateCiudadanoDTO getDebateCiudadano(Integer leyId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         Double avg = calificacionRepository.findAveragePuntajeByLeyId(leyId);
@@ -336,6 +446,13 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * @param leyId identificador de la ley
+     * @return la auditoría de coherencia de la ley: por cada vínculo
+     *         promesa-ley, el político, su voto en esta ley y el nivel de
+     *         coherencia entre ambos
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     public AuditoriaCoherenciaDTO getAuditoriaCoherencia(Integer leyId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         return AuditoriaCoherenciaDTO.builder()
@@ -355,6 +472,12 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * @param ley ley en la que se busca el voto
+     * @param p político cuyo voto se busca
+     * @return el nombre del tipo de voto emitido por el político en esa
+     *         ley, o {@code "N/A"} si no votó
+     */
     private String findVotoForPolitico(Ley ley, com.controlf.db.schema.Politico p) {
         return ley.getVotos().stream()
                 .filter(v -> v.getPolitico().getId().equals(p.getId()))
@@ -363,6 +486,11 @@ public class LeyService {
                 .orElse("N/A");
     }
 
+    /**
+     * @param leyId identificador de la ley
+     * @return el resultado de la votación de la ley, con el desglose por tipo de voto
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     public ResultadoVotacionDTO getResultadoVotacion(Integer leyId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         long favor = votoRepository.countByLeyIdAndTipoVoto(leyId, TipoVoto.FAVOR);
@@ -385,6 +513,22 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * Importa el detalle de votación de una ley desde la fuente externa,
+     * vinculando cada entrada al político local homónimo. Las entradas sin
+     * político local coincidente se cuentan como ignoradas, y las que
+     * ya tienen un voto registrado para esta ley, como duplicadas.
+     * Como la fuente externa no informa la hora exacta del voto de cada
+     * votante, se usa la fecha de ingreso de la ley (todos los votos de un
+     * mismo expediente ocurren en la misma sesión); si esta faltara, se usa
+     * el momento actual.
+     *
+     * @param leyId identificador de la ley
+     * @return el resultado de la importación; si la ley no tiene
+     *         identificador externo, devuelve un resultado vacío
+     * @throws java.util.NoSuchElementException si la ley no existe
+     * @throws RuntimeException si falla la consulta a la fuente externa
+     */
     @Transactional
     public ImportResultDTO importVotingDetailVotes(Integer leyId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
@@ -404,9 +548,6 @@ public class LeyService {
         int ignored = 0;
         int duplicates = 0;
 
-        // La fecha de la votación es la de la ley (todos los votos de un mismo
-        // expediente ocurren en la misma sesión). El detalle externo no trae fecha
-        // por votante, así que se usa fechaIngreso; sólo si faltara se cae a "ahora".
         LocalDateTime fechaVotacion = ley.getFechaIngreso() != null
                 ? ley.getFechaIngreso().atStartOfDay()
                 : LocalDateTime.now();
@@ -443,6 +584,17 @@ public class LeyService {
         return new ImportResultDTO(total, imported, ignored, duplicates);
     }
 
+    /**
+     * Calcula cuántas entradas del detalle de votación externo tienen un
+     * político local homónimo, sin importar nada. Útil para mostrar de
+     * antemano qué tan completa sería una importación antes de ejecutarla.
+     *
+     * @param leyId identificador de la ley
+     * @return el resumen de coincidencias encontradas/no encontradas; si
+     *         la ley no tiene identificador externo o la consulta falla,
+     *         devuelve un resumen vacío
+     * @throws java.util.NoSuchElementException si la ley no existe
+     */
     public VotingMatchSummaryDTO getVotingMatchSummary(Integer leyId) {
         Ley ley = leyRepository.findById(leyId).orElseThrow();
         if (ley.getExternalId() == null) {
@@ -482,6 +634,11 @@ public class LeyService {
         }
     }
 
+    /**
+     * @param externalId identificador externo de la votación; puede ser {@code null}
+     * @return el detalle de votación obtenido de la fuente externa, o una lista vacía si no hay identificador
+     * @throws Exception si la petición HTTP o el parseo de la respuesta fallan
+     */
     private java.util.List<VotingDetailDTO> loadVotingDetailEntries(Long externalId) throws Exception {
         if (externalId == null) {
             return java.util.List.of();
@@ -507,12 +664,21 @@ public class LeyService {
         return mapper.readValue(response.body(), mapper.getTypeFactory().constructCollectionType(java.util.List.class, VotingDetailDTO.class));
     }
 
+    /**
+     * @param firstName nombre; puede ser {@code null}
+     * @param lastname apellido; puede ser {@code null}
+     * @return el nombre completo, con espacios sobrantes recortados
+     */
     private String buildFullName(String firstName, String lastname) {
         String trimmedFirst = firstName == null ? "" : firstName.trim();
         String trimmedLast = lastname == null ? "" : lastname.trim();
         return (trimmedFirst + " " + trimmedLast).trim();
     }
 
+    /**
+     * @param description descripción de voto recibida de la fuente externa (p. ej. {@code "SI"}, {@code "NO"})
+     * @return el {@link TipoVoto} correspondiente, o {@code ABSTENCION} si es nula o desconocida
+     */
     private TipoVoto mapVote(String description) {
         if (description == null) {
             return TipoVoto.ABSTENCION;
@@ -525,6 +691,9 @@ public class LeyService {
         };
     }
 
+    /**
+     * @return las categorías distintas registradas y todos los estados posibles de ley
+     */
     private FiltrosLeyDTO buildFiltrosLeyDTO() {
         return FiltrosLeyDTO.builder()
                 .categorias(leyRepository.findDistinctCategorias())
@@ -532,6 +701,14 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * Clasifica una ley en una categoría temática a partir de palabras
+     * clave presentes en su título o descripción.
+     *
+     * @param titulo título de la ley
+     * @param descripcion descripción de la ley
+     * @return la categoría detectada, o {@code "GENERAL"} si no coincide con ninguna palabra clave
+     */
     private String classifyLaw(String titulo, String descripcion) {
         String combined = ((titulo == null ? "" : titulo) + " " + (descripcion == null ? "" : descripcion)).toLowerCase(Locale.ROOT);
         if (combined.contains("educ") || combined.contains("escuela") || combined.contains("universidad")) {
@@ -549,6 +726,10 @@ public class LeyService {
         return "GENERAL";
     }
 
+    /**
+     * @param ley entidad a convertir
+     * @return el expediente legislativo correspondiente a la ley
+     */
     private static ExpedienteLegislativoDTO mapToExpedienteDTO(Ley ley) {
         return ExpedienteLegislativoDTO.builder()
                 .id(ley.getId().toString())
@@ -563,6 +744,11 @@ public class LeyService {
                 .build();
     }
 
+    /**
+     * @param externalId identificador externo de la votación; puede ser {@code null}
+     * @return la cantidad de entradas en el detalle de votación externo
+     * @throws Exception si la petición HTTP o el parseo de la respuesta fallan
+     */
     private int loadVotingDetailCount(Long externalId) throws Exception {
         if (externalId == null) {
             return 0;

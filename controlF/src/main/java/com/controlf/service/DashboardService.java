@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Estadísticas agregadas, métricas interactivas filtrables y
+ * exportaciones CSV para el dashboard público y el panel administrativo.
+ */
 @Service
 @RequiredArgsConstructor
 public class DashboardService {
@@ -36,10 +40,13 @@ public class DashboardService {
     private final VotoRepository votoRepository;
     private final CalificacionRepository calificacionRepository;
 
+    /**
+     * @return las estadísticas generales del dashboard (totales y
+     *         actividad reciente), usando la misma escala de coherencia
+     *         que el resto del sistema para que el promedio global
+     *         coincida con el de la sección de Métricas
+     */
     public DashboardStatsDTO getStats() {
-        // Misma escala de coherencia que el resto del sistema (CUMPLE=100, AMBIGUO=50,
-        // INCUMPLE=0), para que "Coherencia global" coincida con la sección de Métricas,
-        // el repositorio y el CSV. scoreCoherencia además tolera nivelCoherencia null.
         Double avgCoherencia = vinculoRepository.findAll().stream()
                 .mapToDouble(this::scoreCoherencia)
                 .average()
@@ -66,8 +73,16 @@ public class DashboardService {
     }
 
     /**
-     * Métricas de cumplimiento interactivas (CF-021). Aplica filtros de categoría, estado y rango
-     * de fechas sobre datos reales y devuelve agregaciones listas para graficar y comparar.
+     * Calcula métricas de cumplimiento interactivas aplicando filtros de
+     * categoría, estado y rango de fechas sobre datos reales: leyes por
+     * estado/categoría, votos por tipo, coherencia por categoría y una
+     * serie temporal mensual de votos.
+     *
+     * @param categoria filtro opcional por categoría de ley
+     * @param estado filtro opcional por estado de ley (nombre del enum, o {@code "TODOS"})
+     * @param desde fecha inicial opcional del rango, en formato ISO ({@code yyyy-MM-dd})
+     * @param hasta fecha final opcional del rango, en formato ISO ({@code yyyy-MM-dd})
+     * @return las métricas agregadas resultantes de aplicar los filtros
      */
     public MetricasInteractivasDTO getMetricasInteractivas(String categoria, String estado, String desde, String hasta) {
         String categoriaFiltro = (categoria != null && !categoria.isBlank()) ? categoria.trim() : null;
@@ -75,14 +90,12 @@ public class DashboardService {
         LocalDate desdeFiltro = parseFecha(desde);
         LocalDate hastaFiltro = parseFecha(hasta);
 
-        // Leyes filtradas por categoría/estado
         List<Ley> leyes = leyRepository.findAll().stream()
                 .filter(l -> categoriaFiltro == null || categoriaFiltro.equalsIgnoreCase(l.getCategoria()))
                 .filter(l -> estadoFiltro == null || l.getEstado() == estadoFiltro)
                 .collect(Collectors.toList());
         Set<Integer> leyIds = leyes.stream().map(Ley::getId).collect(Collectors.toSet());
 
-        // Leyes por estado
         Map<String, Long> porEstado = new LinkedHashMap<>();
         for (EstadoLey e : EstadoLey.values()) {
             porEstado.put(e.name(), 0L);
@@ -93,14 +106,12 @@ public class DashboardService {
             }
         }
 
-        // Leyes por categoría
         Map<String, Long> porCategoria = new LinkedHashMap<>();
         for (Ley l : leyes) {
             String c = (l.getCategoria() == null || l.getCategoria().isBlank()) ? "SIN CATEGORÍA" : l.getCategoria();
             porCategoria.merge(c, 1L, Long::sum);
         }
 
-        // Votos de las leyes filtradas dentro del rango de fechas
         List<Voto> votos = votoRepository.findAll().stream()
                 .filter(v -> v.getLey() != null && leyIds.contains(v.getLey().getId()))
                 .filter(v -> enRango(v.getFechaVoto(), desdeFiltro, hastaFiltro))
@@ -110,7 +121,6 @@ public class DashboardService {
         long contra = votos.stream().filter(v -> v.getTipoVoto() == TipoVoto.CONTRA).count();
         long abstencion = votos.stream().filter(v -> v.getTipoVoto() == TipoVoto.ABSTENCION).count();
 
-        // Serie temporal de votos por mes (yyyy-MM), ordenada
         Map<String, Long> serie = new java.util.TreeMap<>();
         for (Voto v : votos) {
             if (v.getFechaVoto() != null) {
@@ -118,13 +128,9 @@ public class DashboardService {
                 serie.merge(periodo, 1L, Long::sum);
             }
         }
-        // Rellena los meses intermedios sin votos con 0, para que el eje temporal
-        // sea continuo y no "salte" meses (un mes con muchos votos no debe quedar
-        // pegado visualmente a otro mes lejano).
         serie = rellenarMesesContinuos(serie);
 
-        // Coherencia (cumplimiento) por categoría a partir de los vínculos de las leyes filtradas
-        Map<String, long[]> acumCoherencia = new LinkedHashMap<>(); // [sumaPonderada, conteo]
+        Map<String, long[]> acumCoherencia = new LinkedHashMap<>();
         double sumaGlobal = 0.0;
         long conteoGlobal = 0;
         for (VinculoPromesaLey v : vinculoRepository.findAll()) {
@@ -168,6 +174,14 @@ public class DashboardService {
                 .build();
     }
 
+    /**
+     * Traduce un nivel de coherencia a un puntaje numérico en la misma
+     * escala usada en todo el sistema (0-100), para que los promedios
+     * calculados aquí sean comparables con los de otras vistas.
+     *
+     * @param v vínculo de coherencia a puntuar
+     * @return 100 para {@code CUMPLE}, 50 para {@code AMBIGUO}, 0 para {@code INCUMPLE} o nivel nulo
+     */
     private long scoreCoherencia(VinculoPromesaLey v) {
         if (v.getNivelCoherencia() == null) return 0;
         return switch (v.getNivelCoherencia()) {
@@ -178,9 +192,13 @@ public class DashboardService {
     }
 
     /**
-     * Devuelve una serie mensual continua entre el primer y el último periodo presentes,
-     * insertando en 0 los meses intermedios que no tengan votos. Preserva el orden
-     * cronológico. Si la serie está vacía o tiene un solo mes, se devuelve tal cual.
+     * Completa con ceros los meses intermedios sin votos entre el primer y
+     * el último periodo presentes, para que la serie temporal sea continua
+     * y un mes con muchos votos no quede pegado visualmente a otro mes lejano.
+     *
+     * @param serie serie de conteos por periodo ({@code yyyy-MM}), ordenada cronológicamente
+     * @return la misma serie si tiene menos de dos periodos; en caso
+     *         contrario, una serie continua con los huecos rellenados en 0
      */
     private Map<String, Long> rellenarMesesContinuos(Map<String, Long> serie) {
         if (serie.size() < 2) {
@@ -198,6 +216,10 @@ public class DashboardService {
         return continua;
     }
 
+    /**
+     * @param mapa pares clave-valor a convertir
+     * @return el mismo contenido como lista de {@link MetricaItemDTO}, preservando el orden de iteración
+     */
     private List<MetricaItemDTO> toItems(Map<String, Long> mapa) {
         List<MetricaItemDTO> items = new ArrayList<>();
         for (Map.Entry<String, Long> e : mapa.entrySet()) {
@@ -206,6 +228,10 @@ public class DashboardService {
         return items;
     }
 
+    /**
+     * @param estado nombre del estado a parsear; puede ser {@code null}, vacío o {@code "TODOS"}
+     * @return el {@link EstadoLey} correspondiente, o {@code null} si no se debe filtrar o el valor es inválido
+     */
     private EstadoLey parseEstado(String estado) {
         if (estado == null || estado.isBlank() || estado.equalsIgnoreCase("TODOS")) {
             return null;
@@ -217,6 +243,10 @@ public class DashboardService {
         }
     }
 
+    /**
+     * @param fecha fecha en formato ISO a parsear; puede ser {@code null} o vacía
+     * @return la fecha parseada, o {@code null} si es nula, vacía o inválida
+     */
     private LocalDate parseFecha(String fecha) {
         if (fecha == null || fecha.isBlank()) {
             return null;
@@ -228,9 +258,15 @@ public class DashboardService {
         }
     }
 
+    /**
+     * @param fechaVoto fecha y hora del voto; puede ser {@code null}
+     * @param desde límite inferior inclusivo del rango; {@code null} para no acotar
+     * @param hasta límite superior inclusivo del rango; {@code null} para no acotar
+     * @return {@code true} si el voto cae dentro del rango. Un voto sin
+     *         fecha solo se incluye cuando no se está filtrando por rango.
+     */
     private boolean enRango(LocalDateTime fechaVoto, LocalDate desde, LocalDate hasta) {
         if (fechaVoto == null) {
-            // Sin fecha solo se incluye cuando no se filtra por rango.
             return desde == null && hasta == null;
         }
         LocalDate fecha = fechaVoto.toLocalDate();
@@ -241,7 +277,7 @@ public class DashboardService {
     }
 
     /**
-     * Exportación detallada por actor político (CF-022): coherencia, reputación y desglose de votos.
+     * @return un CSV con el detalle por político: coherencia, reputación y desglose de votos
      */
     public String exportPoliticosCsv() {
         StringBuilder csv = new StringBuilder();
@@ -272,7 +308,7 @@ public class DashboardService {
     }
 
     /**
-     * Exportación detallada por ley (CF-022): estado, categoría y resultado de la votación.
+     * @return un CSV con el detalle por ley: estado, categoría y resultado de la votación
      */
     public String exportLeyesCsv() {
         StringBuilder csv = new StringBuilder();
@@ -296,6 +332,13 @@ public class DashboardService {
         return csv.toString();
     }
 
+    /**
+     * Aplica el escape mínimo requerido por el formato CSV (comillas
+     * alrededor del valor si contiene comas, comillas o saltos de línea).
+     *
+     * @param value valor a escapar; puede ser {@code null}
+     * @return el valor listo para insertarse en una celda CSV
+     */
     private String escape(String value) {
         if (value == null) {
             return "";
@@ -306,6 +349,9 @@ public class DashboardService {
         return value;
     }
 
+    /**
+     * @return las estadísticas generales del dashboard como CSV
+     */
     public String exportStatsCsv() {
         DashboardStatsDTO stats = getStats();
         StringBuilder csv = new StringBuilder();
