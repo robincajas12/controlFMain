@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Estadísticas agregadas y exportaciones CSV para el dashboard público.
+ */
 @RestController
 @CrossOrigin("*")
 @RequestMapping("/api/dashboard")
@@ -19,11 +22,21 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
 
+    /**
+     * @return las estadísticas generales del dashboard
+     */
     @GetMapping("/stats")
     public DashboardStatsDTO getStats() {
         return dashboardService.getStats();
     }
 
+    /**
+     * @param categoria filtro opcional por categoría de ley
+     * @param estado filtro opcional por estado de ley
+     * @param desde fecha inicial opcional del rango a consultar
+     * @param hasta fecha final opcional del rango a consultar
+     * @return las métricas interactivas filtradas según los parámetros dados
+     */
     @GetMapping("/metricas")
     public com.controlf.dto.MetricasInteractivasDTO getMetricas(
             @org.springframework.web.bind.annotation.RequestParam(required = false) String categoria,
@@ -33,6 +46,9 @@ public class DashboardController {
         return dashboardService.getMetricasInteractivas(categoria, estado, desde, hasta);
     }
 
+    /**
+     * @return las estadísticas del dashboard como archivo CSV descargable
+     */
     @GetMapping("/export")
     public ResponseEntity<String> exportStats() {
         String csv = dashboardService.exportStatsCsv();
@@ -42,6 +58,9 @@ public class DashboardController {
                 .body(csv);
     }
 
+    /**
+     * @return un reporte detallado de políticos como archivo CSV descargable
+     */
     @GetMapping("/export/politicos")
     public ResponseEntity<String> exportPoliticos() {
         String csv = dashboardService.exportPoliticosCsv();
@@ -51,6 +70,9 @@ public class DashboardController {
                 .body(csv);
     }
 
+    /**
+     * @return un reporte detallado de leyes como archivo CSV descargable
+     */
     @GetMapping("/export/leyes")
     public ResponseEntity<String> exportLeyes() {
         String csv = dashboardService.exportLeyesCsv();

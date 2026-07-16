@@ -14,7 +14,12 @@ interface CartaPoliticoProps {
   };
 }
 
+/**
+ * Tarjeta resumen de un político en el directorio: foto, organización,
+ * porcentaje de coherencia y enlace a su expediente completo.
+ */
 const CartaPolitico: React.FC<CartaPoliticoProps> = ({ politico }) => {
+  /** Color de la etiqueta de estado según el nivel de coherencia del político. */
   const getBadgeColor = (estado: string) => {
     switch (estado.toUpperCase()) {
       case 'COHERENTE':

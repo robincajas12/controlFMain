@@ -26,9 +26,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Gestión de suscripciones y generación de alertas de nuevas leyes/votaciones (CF-015).
- * Un usuario se suscribe a una categoría (o a todas) y consulta las leyes y votaciones relevantes,
- * resaltando las que son nuevas desde su fecha de suscripción.
+ * Gestión de suscripciones y generación de alertas de nuevas leyes y
+ * votaciones. Un usuario se suscribe a una categoría (o a todas) y
+ * consulta las leyes y votaciones relevantes, resaltando las que son
+ * nuevas desde su fecha de suscripción.
  */
 @Service
 @RequiredArgsConstructor
@@ -42,12 +43,26 @@ public class AlertaService {
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final int MAX_ALERTAS = 50;
 
+    /**
+     * @param userId identificador del usuario
+     * @return las suscripciones a categorías registradas por el usuario
+     */
     public List<SuscripcionDTO> listarSuscripciones(Integer userId) {
         return suscripcionRepository.findByUsuarioId(userId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Crea una suscripción a una categoría (o a todas las leyes si la
+     * categoría es nula o vacía). Si el usuario ya tiene una suscripción
+     * equivalente, la devuelve en lugar de duplicarla.
+     *
+     * @param userId identificador del usuario
+     * @param categoria categoría a la que suscribirse; {@code null} para suscribirse a todas
+     * @return la suscripción creada o la ya existente equivalente
+     * @throws ResponseStatusException 404 si el usuario no existe
+     */
     @Transactional
     public SuscripcionDTO crearSuscripcion(Integer userId, String categoria) {
         Usuario usuario = usuarioRepository.findById(userId)
@@ -55,7 +70,6 @@ public class AlertaService {
 
         String cat = (categoria != null && !categoria.isBlank()) ? categoria.trim() : null;
 
-        // Evita suscripciones duplicadas a la misma categoría (o a "todas").
         for (Suscripcion existente : suscripcionRepository.findByUsuarioId(userId)) {
             if (mismaCategoria(existente.getCategoria(), cat)) {
                 return mapToDTO(existente);
@@ -69,6 +83,14 @@ public class AlertaService {
         return mapToDTO(suscripcionRepository.save(suscripcion));
     }
 
+    /**
+     * Elimina una suscripción, verificando que pertenezca al usuario que la solicita.
+     *
+     * @param userId identificador del usuario autenticado
+     * @param suscripcionId identificador de la suscripción a eliminar
+     * @throws ResponseStatusException 404 si la suscripción no existe, 403
+     *         si pertenece a otro usuario
+     */
     @Transactional
     public void eliminarSuscripcion(Integer userId, Integer suscripcionId) {
         Suscripcion suscripcion = suscripcionRepository.findById(suscripcionId)
@@ -79,6 +101,16 @@ public class AlertaService {
         suscripcionRepository.delete(suscripcion);
     }
 
+    /**
+     * Calcula las alertas de leyes nuevas y votaciones recientes que
+     * coinciden con las suscripciones del usuario, marcando como
+     * {@code nuevo} lo ocurrido después de la suscripción más antigua.
+     * El resultado se ordena por fecha descendente y se acota a
+     * {@link #MAX_ALERTAS}.
+     *
+     * @param userId identificador del usuario
+     * @return las alertas relevantes para el usuario, o una lista vacía si no tiene suscripciones
+     */
     public List<AlertaDTO> obtenerAlertas(Integer userId) {
         List<Suscripcion> subs = suscripcionRepository.findByUsuarioId(userId);
         if (subs.isEmpty()) {
@@ -143,12 +175,21 @@ public class AlertaService {
         return alertas.size() > MAX_ALERTAS ? new ArrayList<>(alertas.subList(0, MAX_ALERTAS)) : alertas;
     }
 
+    /**
+     * @param a primera categoría a comparar; puede ser {@code null} (equivale a "todas")
+     * @param b segunda categoría a comparar; puede ser {@code null} (equivale a "todas")
+     * @return {@code true} si ambas representan la misma categoría, sin distinguir mayúsculas/minúsculas
+     */
     private boolean mismaCategoria(String a, String b) {
         if (a == null && b == null) return true;
         if (a == null || b == null) return false;
         return a.equalsIgnoreCase(b);
     }
 
+    /**
+     * @param s entidad de suscripción a convertir
+     * @return el DTO correspondiente, con la fecha formateada
+     */
     private SuscripcionDTO mapToDTO(Suscripcion s) {
         return SuscripcionDTO.builder()
                 .id(s.getId())

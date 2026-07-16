@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Datos de referencia (políticos y leyes) para el panel administrativo del motor de coherencia.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -33,6 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Importa miembros de la Asamblea Nacional del Ecuador y el detalle de sus
+ * votaciones desde el portal de datos abiertos, y los traduce al modelo
+ * interno de {@code Politico}, {@code Ley} y {@code Voto}.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -51,6 +56,13 @@ public class AssemblyImportService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * Obtiene los miembros de la asamblea desde la fuente externa,
+     * deduplicados por identificador (la fuente devuelve una entrada por
+     * cada período legislativo en el que participó el mismo asambleísta).
+     *
+     * @return los miembros de la asamblea, uno por identificador
+     */
     public List<AssemblyMemberDTO> getAssemblyMembers() {
         String url = "https://datos.asambleanacional.gob.ec/ecurul/assemblyman/assembly?idType=1&onlyActive=false&idPeriod=&idTerritorial=";
         ResponseEntity<List<AssemblyMemberDTO>> response = restTemplate.exchange(
@@ -61,9 +73,6 @@ public class AssemblyImportService {
             return List.of();
         }
 
-        // La fuente externa devuelve al mismo asambleísta una vez por cada período
-        // legislativo, todas las entradas comparten el mismo id. Nos quedamos con una
-        // sola por id para evitar nombres repetidos en los selectores del panel.
         Map<Long, AssemblyMemberDTO> uniquePorId = new LinkedHashMap<>();
         for (AssemblyMemberDTO member : members) {
             uniquePorId.putIfAbsent(member.getId(), member);
@@ -71,6 +80,16 @@ public class AssemblyImportService {
         return new ArrayList<>(uniquePorId.values());
     }
 
+    /**
+     * Consulta las votaciones de un miembro de la asamblea directamente
+     * contra el portal externo (fuera de {@link RestTemplate}, ya que este
+     * endpoint responde HTML en lugar de JSON cuando no hay resultados).
+     *
+     * @param memberId identificador externo del miembro de la asamblea
+     * @return las votaciones encontradas, o una lista vacía si la fuente
+     *         no devolvió resultados (respuesta HTML en vez de JSON)
+     * @throws Exception si la petición HTTP o el parseo de la respuesta fallan
+     */
     public List<VotingDTO> getVotings(Long memberId) throws Exception {
         String url = String.format(
                 BASE_URL + "/findVotings?periodId=&assemblyMemberId=%d&dateIn=&dateOut=&sessionNumber=&theme=&proposal=&offset=0&limit=",
@@ -103,6 +122,17 @@ return objectMapper.readValue(response.body(),
         objectMapper.getTypeFactory().constructCollectionType(List.class, VotingDTO.class));
     }
 
+    /**
+     * Importa únicamente las votaciones seleccionadas de un miembro de la
+     * asamblea (sin filtrar por relevancia), vinculándolas al político
+     * local con el mismo nombre completo.
+     *
+     * @param assemblyMemberId identificador externo del miembro de la asamblea
+     * @param selectedIds identificadores externos de las votaciones a importar
+     * @return el resultado de la importación (encontradas, importadas, ignoradas, duplicadas)
+     * @throws RuntimeException si falla la consulta a la fuente externa, si
+     *         el miembro no existe, o si no hay un político local con ese nombre
+     */
     public ImportResultDTO importSelectedVotings(Long assemblyMemberId, List<Long> selectedIds) {
         log.info("Iniciando importación seleccionada para assemblyMemberId={}", assemblyMemberId);
 
@@ -192,6 +222,15 @@ return objectMapper.readValue(response.body(),
         return new ImportResultDTO(found, imported, ignored, duplicates);
     }
 
+    /**
+     * Importa las votaciones de cada político indicado, resolviendo su
+     * miembro de asamblea equivalente por nombre completo. Los políticos
+     * sin equivalente en la fuente externa se cuentan como ignorados.
+     *
+     * @param politicoIds identificadores de los políticos locales a sincronizar
+     * @return el resultado agregado de la importación
+     * @throws RuntimeException si {@code politicoIds} es nulo o está vacío
+     */
     public ImportResultDTO importLeyesForPoliticos(List<Integer> politicoIds) {
         log.info("Iniciando importación por candidatos: {}", politicoIds);
         if (politicoIds == null || politicoIds.isEmpty()) {
@@ -231,6 +270,18 @@ return objectMapper.readValue(response.body(),
         return new ImportResultDTO(politicoIds.size(), imported, ignored, duplicates);
     }
 
+    /**
+     * Importa todas las votaciones relevantes (ver {@link #isRelevant})
+     * de un miembro de la asamblea. Las votaciones cuyo identificador
+     * externo ya existe se vinculan a la ley existente en vez de crear una
+     * nueva, y se omiten como duplicadas si el político ya tiene un voto
+     * registrado para esa ley.
+     *
+     * @param assemblyMemberId identificador externo del miembro de la asamblea
+     * @return el resultado de la importación (encontradas, importadas, ignoradas, duplicadas)
+     * @throws RuntimeException si falla la consulta a la fuente externa, si
+     *         el miembro no existe, o si no hay un político local con ese nombre
+     */
     public ImportResultDTO importVotings(Long assemblyMemberId) {
         log.info("Iniciando importación para assemblyMemberId={}", assemblyMemberId);
 
@@ -322,6 +373,14 @@ return objectMapper.readValue(response.body(),
         return new ImportResultDTO(found, imported, ignored, duplicates);
     }
 
+    /**
+     * Clasifica una ley en una categoría temática a partir de palabras
+     * clave presentes en su título o descripción.
+     *
+     * @param titulo título de la ley
+     * @param descripcion descripción de la ley
+     * @return la categoría detectada, o {@code "GENERAL"} si no coincide con ninguna palabra clave
+     */
     private String classifyLaw(String titulo, String descripcion) {
         String combined = ((titulo == null ? "" : titulo) + " " + (descripcion == null ? "" : descripcion)).toLowerCase();
         if (combined.contains("educ") || combined.contains("escuela") || combined.contains("universidad")) {
@@ -339,6 +398,12 @@ return objectMapper.readValue(response.body(),
         return "GENERAL";
     }
 
+    /**
+     * Traduce la descripción de voto de la fuente externa al enum interno.
+     *
+     * @param description descripción de voto recibida de la fuente externa (p. ej. {@code "SI"}, {@code "NO"})
+     * @return el {@link TipoVoto} correspondiente, o {@code ABSTENCION} si es nula o desconocida
+     */
     private TipoVoto mapVote(String description) {
         if (description == null) {
             log.warn("Voto nulo recibido, asignando ABSTENCION");
@@ -355,12 +420,25 @@ return objectMapper.readValue(response.body(),
         };
     }
 
+    /**
+     * Filtra votaciones puramente procedimentales (instalación de sesión,
+     * lectura de actas, homenajes, etc.) que no representan una decisión
+     * legislativa sustantiva.
+     *
+     * @param v votación a evaluar
+     * @return {@code true} si no contiene ninguna palabra clave de {@link #IRRELEVANT}
+     */
     private boolean isRelevant(VotingDTO v) {
         String combined = ((v.getProposalDescription() == null ? "" : v.getProposalDescription()) + " " +
                 (v.getThemeDescription() == null ? "" : v.getThemeDescription())).toLowerCase();
         return IRRELEVANT.stream().noneMatch(combined::contains);
     }
 
+    /**
+     * @param value texto a truncar; puede ser {@code null}
+     * @param maxLength longitud máxima permitida
+     * @return el texto truncado a {@code maxLength} caracteres, o {@code null} si el valor era {@code null}
+     */
     private String truncate(String value, int maxLength) {
         if (value == null) return null;
         return value.length() <= maxLength ? value : value.substring(0, maxLength);

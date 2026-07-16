@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Par identificador-etiqueta genérico, usado en selectores y listados simples.
+ */
 @Data
 @Builder
 @NoArgsConstructor

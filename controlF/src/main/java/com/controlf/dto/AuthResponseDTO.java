@@ -5,6 +5,9 @@ import lombok.Data;
 
 import java.util.Map;
 
+/**
+ * Respuesta de login/registro: el token de sesión emitido y los datos básicos del usuario.
+ */
 @Data
 @AllArgsConstructor
 public class AuthResponseDTO {

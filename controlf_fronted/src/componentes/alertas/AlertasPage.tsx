@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+/** Suscripción del usuario a una categoría de leyes (o a todas, si es {@code null}). */
 interface Suscripcion {
   id: number;
   categoria: string | null;
   fechaCreacion: string | null;
 }
 
+/** Novedad de una ley o votación dentro de una categoría suscrita. */
 interface Alerta {
   tipo: string;       // LEY | VOTACION
   titulo: string;
@@ -18,6 +20,10 @@ interface Alerta {
   nuevo: boolean;
 }
 
+/**
+ * Gestión de suscripciones a categorías de leyes y feed de alertas de
+ * novedades (nuevas leyes o votaciones) dentro de esas categorías.
+ */
 const AlertasPage: React.FC = () => {
   const { apiFetch } = useAuth();
   const [suscripciones, setSuscripciones] = useState<Suscripcion[]>([]);
@@ -27,6 +33,7 @@ const AlertasPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
+  /** Recarga las suscripciones del usuario y el feed de alertas derivado de ellas. */
   const cargar = async () => {
     setIsLoading(true);
     try {
@@ -54,6 +61,7 @@ const AlertasPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Crea una suscripción a la categoría elegida, o a todas si no se seleccionó ninguna. */
   const suscribir = async () => {
     setGuardando(true);
     try {
@@ -74,6 +82,7 @@ const AlertasPage: React.FC = () => {
     }
   };
 
+  /** Elimina la suscripción indicada. */
   const eliminar = async (id: number) => {
     try {
       const res = await apiFetch(`/api/alertas/suscripciones/${id}`, { method: 'DELETE' });

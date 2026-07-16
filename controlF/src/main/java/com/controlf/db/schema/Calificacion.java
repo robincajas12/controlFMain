@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+/**
+ * Calificación numérica (1-5) que un usuario asigna a una ley o a un político.
+ */
 @Entity
 @Table(name = "calificaciones")
 @Data

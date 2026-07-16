@@ -3,6 +3,9 @@ package com.controlf.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+/**
+ * Datos del usuario autenticado en la sesión actual.
+ */
 @Data
 @AllArgsConstructor
 public class AuthMeResponseDTO {

@@ -1,13 +1,18 @@
 import React from 'react';
 
 interface IndiceReputacionProps {
-  indice: number;              // promedio 1-5
+  /** Promedio de calificaciones ciudadanas, en escala 1-5. */
+  indice: number;
   totalCalificaciones: number;
   etiqueta: string;
 }
 
 const MAX = 5;
 
+/**
+ * Muestra el índice de reputación ciudadana de un político como un
+ * indicador circular, una barra de progreso y estrellas.
+ */
 const IndiceReputacion: React.FC<IndiceReputacionProps> = ({ indice, totalCalificaciones, etiqueta }) => {
   const porcentaje = Math.max(0, Math.min(100, (indice / MAX) * 100));
 

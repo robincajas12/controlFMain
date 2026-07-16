@@ -24,6 +24,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Registro, login y consulta de la sesión actual. El registro permite que
+ * el propio usuario elija su rol (incluido ADMIN/VALIDADOR); es un
+ * comportamiento pensado para entornos de desarrollo, no para producción.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -35,12 +40,18 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    /**
+     * Registra un nuevo usuario y devuelve un token de sesión listo para usar.
+     *
+     * @param request datos de registro (nombre, email, contraseña, rol opcional)
+     * @return un {@link AuthResponseDTO} con el token emitido si el registro
+     *         fue exitoso, o un 409 con el campo en conflicto (email o
+     *         nombre ya registrados)
+     */
     @PostMapping("/registro")
     public ResponseEntity<?> register(@Valid @RequestBody AuthRegisterRequestDTO request) {
         String nombre = request.getNombre().trim();
 
-        // Se conserva la validación de correo ya existente y se devuelve el campo
-        // en conflicto para poder mostrar el error junto al campo correspondiente.
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(Map.of("campo", "email", "mensaje", "Este correo ya está registrado"));
@@ -64,9 +75,13 @@ public class AuthController {
     }
 
     /**
-     * Verificación de disponibilidad usada por el formulario de registro para avisar
-     * antes de enviar si un correo o nombre ya está en uso y sugerir alternativas.
-     * Es de solo lectura y se apoya en las consultas ya existentes del repositorio.
+     * Verifica disponibilidad de email y/o nombre de usuario, usada por el
+     * formulario de registro para avisar antes de enviar si alguno ya está
+     * en uso y sugerir alternativas. Operación de solo lectura.
+     *
+     * @param request mapa con las claves opcionales {@code "email"} y {@code "nombre"} a verificar
+     * @return un mapa con {@code emailDisponible}, {@code nombreDisponible}
+     *         y, si el nombre está ocupado, una lista de {@code sugerencias}
      */
     @PostMapping("/availability")
     public ResponseEntity<Map<String, Object>> checkAvailability(@RequestBody Map<String, String> request) {
@@ -90,19 +105,33 @@ public class AuthController {
         return ResponseEntity.ok(result);
     }
 
+    /**
+     * Resuelve el rol solicitado en el registro a un valor válido de
+     * {@link Usuario.Rol}, sin distinguir mayúsculas/minúsculas.
+     *
+     * @param rol nombre de rol solicitado; puede ser {@code null} o vacío
+     * @return el rol resuelto, o {@link Usuario.Rol#CIUDADANO} si es nulo,
+     *         vacío o no coincide con ningún rol conocido
+     */
     private Usuario.Rol resolveRol(String rol) {
         if (rol == null || rol.isBlank()) {
             return Usuario.Rol.CIUDADANO;
         }
         try {
-            // Solo se aceptan los roles ya definidos en el sistema; cualquier otro valor
-            // cae en CIUDADANO para no alterar la lógica de permisos existente.
             return Usuario.Rol.valueOf(rol.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             return Usuario.Rol.CIUDADANO;
         }
     }
 
+    /**
+     * Genera hasta cuatro variantes disponibles de un nombre de usuario ya
+     * ocupado (sufijos numéricos, sin espacios, u otros sufijos), para
+     * ofrecerlas como sugerencias en el formulario de registro.
+     *
+     * @param base nombre de usuario ya en uso
+     * @return hasta cuatro nombres alternativos disponibles
+     */
     private List<String> generarSugerenciasNombre(String base) {
         List<String> sugerencias = new ArrayList<>();
         String sinEspacios = base.replaceAll("\\s+", "");
@@ -129,6 +158,14 @@ public class AuthController {
         return sugerencias;
     }
 
+    /**
+     * Autentica un usuario por email y contraseña y emite un token de sesión.
+     *
+     * @param request credenciales de acceso
+     * @return un {@link AuthResponseDTO} con el token emitido, también
+     *         devuelto en el header {@code Authorization}; 401 si las
+     *         credenciales no son válidas
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody AuthLoginRequestDTO request) {
         try {
@@ -145,6 +182,10 @@ public class AuthController {
         }
     }
 
+    /**
+     * @return los datos del usuario autenticado en la sesión actual, o 401
+     *         si no hay una sesión válida
+     */
     @GetMapping("/me")
     public ResponseEntity<AuthMeResponseDTO> me() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

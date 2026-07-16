@@ -1,3 +1,6 @@
+/**
+ * Panel lateral de navegación del perfil de ley.
+ */
 export interface SidebarNavegacion {
   id: string;                    // Identificador del sidebar
   logoTexto: string;             // Texto del logo superior

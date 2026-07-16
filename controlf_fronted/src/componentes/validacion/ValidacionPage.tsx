@@ -9,13 +9,18 @@ interface ComentarioModeracion {
   fecha: string;
   estado: string;
   notaModeracion: string | null;
-  contextoTipo: string;   // LEY | POLITICO | N/D
+  /** `"LEY"`, `"POLITICO"` o `"N/D"`. */
+  contextoTipo: string;
   contextoTitulo: string;
   contextoId: string;
 }
 
 const ESTADOS = ['TODOS', 'PENDIENTE', 'APROBADO', 'OBSERVADO', 'RECHAZADO'];
 
+/**
+ * @param estado estado de moderación
+ * @returns clases de Tailwind para el badge de color correspondiente
+ */
 const estadoBadge = (estado: string) => {
   switch (estado) {
     case 'APROBADO': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
@@ -26,6 +31,11 @@ const estadoBadge = (estado: string) => {
   }
 };
 
+/**
+ * Panel de validación de comentarios ciudadanos, accesible para los roles
+ * `VALIDADOR` y `ADMIN`. Permite filtrar por estado y aprobar, observar o
+ * rechazar cada comentario; solo los aprobados se muestran públicamente.
+ */
 const ValidacionPage: React.FC = () => {
   const { apiFetch } = useAuth();
   const [comentarios, setComentarios] = useState<ComentarioModeracion[]>([]);
@@ -34,6 +44,10 @@ const ValidacionPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [procesando, setProcesando] = useState<number | null>(null);
 
+  /**
+   * Carga en paralelo la lista de comentarios (filtrada por estado) y el
+   * resumen de conteos por estado.
+   */
   const cargar = async (estado: string) => {
     setIsLoading(true);
     try {
@@ -58,6 +72,10 @@ const ValidacionPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtro]);
 
+  /**
+   * Aplica una decisión de moderación, pidiendo una nota opcional cuando
+   * el nuevo estado es `OBSERVADO` o `RECHAZADO`.
+   */
   const moderar = async (id: number, estado: string) => {
     let nota: string | null = null;
     if (estado === 'OBSERVADO' || estado === 'RECHAZADO') {
@@ -85,7 +103,6 @@ const ValidacionPage: React.FC = () => {
         <p className="text-slate-500">Revisa el contenido ciudadano. Solo los comentarios aprobados se publican en las vistas públicas.</p>
       </div>
 
-      {/* Resumen */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
         {['PENDIENTE', 'APROBADO', 'OBSERVADO', 'RECHAZADO'].map((e) => (
           <div key={e} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -95,7 +112,6 @@ const ValidacionPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-wrap gap-2">
         {ESTADOS.map((e) => (
           <button
@@ -108,7 +124,6 @@ const ValidacionPage: React.FC = () => {
         ))}
       </div>
 
-      {/* Lista */}
       {isLoading ? (
         <div className="space-y-3 animate-pulse">
           {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-white rounded-2xl border border-slate-200"></div>)}

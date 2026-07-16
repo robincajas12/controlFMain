@@ -6,6 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Perfil completo de una ley, agregando las distintas secciones que
+ * conforman su vista de detalle.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Punto genérico de una métrica interactiva (CF-021): una etiqueta y su valor numérico.
+ * Punto genérico de una métrica interactiva: una etiqueta y su valor numérico.
  */
 @Data
 @Builder

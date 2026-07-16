@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Progreso y resultado de sincronizar el detalle de votación de todas las leyes.
+ */
 @Data
 @Builder
 @NoArgsConstructor

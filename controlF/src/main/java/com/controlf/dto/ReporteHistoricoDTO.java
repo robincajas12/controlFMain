@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Resumen histórico agregado de leyes y votos para el dashboard administrativo.
+ */
 @Data
 @Builder
 @NoArgsConstructor

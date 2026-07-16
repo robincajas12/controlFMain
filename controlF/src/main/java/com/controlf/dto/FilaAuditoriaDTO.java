@@ -5,6 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Fila de la tabla de auditoría de coherencia: un político, su voto y el
+ * nivel de coherencia frente a la promesa vinculada.
+ */
 @Data
 @Builder
 @NoArgsConstructor

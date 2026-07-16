@@ -5,6 +5,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Contenido explicativo de una ley: resumen ejecutivo e impacto social,
+ * junto a su estado y categoría reales (tal como están en la base de
+ * datos) para dar trazabilidad en el perfil.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,7 +19,6 @@ public class ContenidoLeyDTO {
     private String titulo;
     private String resumenEjecutivo;
     private String impactoSocial;
-    // Estado y categoría reales de la ley (fuente de verdad: BD) para dar trazabilidad en el perfil.
     private String estado;
     private String categoria;
 }

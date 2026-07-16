@@ -8,6 +8,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Expediente legislativo (ley), con su texto original, resumen
+ * simplificado, votos registrados, comentarios ciudadanos, calificaciones
+ * y vínculos de coherencia con promesas de campaña.
+ */
 @Entity
 @Table(name = "leyes")
 @Data

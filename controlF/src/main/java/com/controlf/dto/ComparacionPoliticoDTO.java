@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Resumen del patrón de votación de un político dentro de una comparación (CF-016).
+ * Resumen del patrón de votación de un político dentro de una comparación entre varios.
  */
 @Data
 @Builder

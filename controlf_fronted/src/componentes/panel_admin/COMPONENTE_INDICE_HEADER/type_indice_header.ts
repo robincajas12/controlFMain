@@ -1,3 +1,6 @@
+/**
+ * Encabezado y menú de navegación del panel administrativo.
+ */
 export interface SidebarNavigation {
   id: string;                  // Identificador único de la sesión del menú
   nombreApp: string;           // Nombre o título del panel principal (e.g., "PAC ADMIN")

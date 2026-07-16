@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Valores disponibles para filtrar el listado de políticos.
+ */
 @Data
 @Builder
 @NoArgsConstructor

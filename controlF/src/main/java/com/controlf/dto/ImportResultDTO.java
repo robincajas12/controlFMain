@@ -4,6 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Resultado de una operación de importación desde la fuente externa:
+ * cuántos registros se encontraron, importaron, ignoraron o eran duplicados.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

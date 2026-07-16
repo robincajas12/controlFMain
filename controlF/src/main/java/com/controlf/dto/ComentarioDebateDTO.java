@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Comentario publicado en el debate ciudadano de una ley o un político.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,6 +18,6 @@ public class ComentarioDebateDTO {
     private String fecha;
     private String mensaje;
     private String avatarUrl;
-    // Calificación ciudadana (1-5) asociada al comentario, si existe (CF-023).
+    /** Calificación ciudadana (1-5) asociada al comentario, si existe. */
     private Integer puntaje;
 }

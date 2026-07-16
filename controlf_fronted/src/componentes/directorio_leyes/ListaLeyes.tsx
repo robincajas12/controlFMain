@@ -16,7 +16,13 @@ interface ListaLeyesProps {
   isLoading: boolean;
 }
 
+/**
+ * Tabla del directorio de leyes, con estados de carga (skeleton) y vacío
+ * (sin resultados) propios. Cada fila enlaza al expediente legislativo
+ * completo de la ley.
+ */
 const ListaLeyes: React.FC<ListaLeyesProps> = ({ leyes = [], isLoading }) => {
+  /** @returns las clases de color del badge de estado, según el estado de la ley. */
   const getEstadoBadge = (estado: string) => {
     if (!estado) return 'bg-slate-100 text-slate-500 border-slate-200';
     switch (estado.toUpperCase()) {

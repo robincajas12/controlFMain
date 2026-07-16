@@ -11,6 +11,11 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 
+/**
+ * Crea una cuenta de administrador por defecto al iniciar la aplicación
+ * cuando el perfil {@code dev} está activo, para que un entorno local
+ * siempre tenga un acceso utilizable sin configuración manual.
+ */
 @Component
 @Profile("dev")
 @RequiredArgsConstructor
@@ -19,6 +24,11 @@ public class DevUserSeeder implements ApplicationRunner {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Crea la cuenta {@code admin@controlf.dev} si todavía no existe.
+     *
+     * @param args argumentos de la aplicación (no se usan)
+     */
     @Override
     public void run(ApplicationArguments args) {
         if (usuarioRepository.findByEmail("admin@controlf.dev").isEmpty()) {

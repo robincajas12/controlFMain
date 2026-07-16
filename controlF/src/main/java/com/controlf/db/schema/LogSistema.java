@@ -6,6 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+/**
+ * Registro de auditoría de una acción administrativa (creado por
+ * {@code AdminService#registrarLog}).
+ */
 @Entity
 @Table(name = "logs_sistema")
 @Data

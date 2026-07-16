@@ -31,6 +31,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Lógica de negocio para políticos: perfiles completos, listados
+ * filtrados y paginados, comparación de patrones de voto, promesas de
+ * campaña, comentarios y calificaciones ciudadanas.
+ */
 @Service
 @RequiredArgsConstructor
 public class PoliticoService {
@@ -45,11 +50,17 @@ public class PoliticoService {
     private final VotoRepository votoRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * @param id identificador del político
+     * @return el perfil completo del político: coherencia, reputación,
+     *         historial de coherencia por ley, historial de cambios de
+     *         perfil y comentarios públicos
+     * @throws java.util.NoSuchElementException si el político no existe
+     */
     public com.controlf.dto.PerfilPoliticoDTO getPoliticoProfile(Integer id) {
         Politico p = politicoRepository.findById(id).orElseThrow();
         Double coherencia = vinculoRepository.findAverageCoherenciaByPoliticoId(p.getId());
 
-        // Índice de reputación consolidado a partir de las calificaciones ciudadanas (escala 1-5).
         Double reputacion = calificacionRepository.findAveragePuntajeByPoliticoId(p.getId());
         double reputacionRedondeada = reputacion != null ? Math.round(reputacion * 10.0) / 10.0 : 0.0;
         long totalCalificaciones = calificacionRepository.countByPoliticoId(p.getId());
@@ -92,8 +103,14 @@ public class PoliticoService {
     }
 
     /**
-     * Compara los patrones de votación entre dos o más políticos (CF-016): distribución de votos,
-     * asistencia, coherencia y las leyes votadas en común con el sentido del voto de cada uno.
+     * Compara los patrones de votación entre dos o más políticos:
+     * distribución de votos, asistencia, coherencia y las leyes votadas en
+     * común con el sentido del voto de cada uno.
+     *
+     * @param ids identificadores de los políticos a comparar (se deduplican; nulos se ignoran)
+     * @return la comparación resultante, incluyendo el índice de coincidencia
+     * @throws ResponseStatusException 400 si hay menos de dos políticos
+     *         distintos, 404 si alguno no existe
      */
     public com.controlf.dto.ComparacionVotosDTO compararPatronesVoto(List<Integer> ids) {
         List<Integer> unicos = ids == null ? List.of() : ids.stream().filter(java.util.Objects::nonNull).distinct().collect(Collectors.toList());
@@ -102,7 +119,7 @@ public class PoliticoService {
         }
 
         List<com.controlf.dto.ComparacionPoliticoDTO> resumenes = new ArrayList<>();
-        // leyId -> (politicoId -> sentido del voto)
+        // Mapa leyId -> (politicoId -> sentido del voto), usado luego para detectar leyes votadas en común.
         Map<Integer, Map<Integer, String>> votosPorLey = new LinkedHashMap<>();
         Map<Integer, String> tituloPorLey = new LinkedHashMap<>();
 
@@ -154,7 +171,7 @@ public class PoliticoService {
         for (Map.Entry<Integer, Map<Integer, String>> entry : votosPorLey.entrySet()) {
             Map<Integer, String> porPolitico = entry.getValue();
             if (porPolitico.size() < 2) {
-                continue; // solo interesa lo votado por dos o más de los comparados
+                continue; // solo interesa lo votado por dos o más de los políticos comparados
             }
             enComun++;
 
@@ -187,13 +204,23 @@ public class PoliticoService {
     }
 
     /**
-     * Un comentario es público si está APROBADO. Los comentarios previos a la moderación
-     * (estado nulo) se consideran aprobados para no ocultar contenido ya existente (CF-029).
+     * Un comentario es público cuando su estado de moderación es
+     * {@code APROBADO}. Los comentarios anteriores a la introducción del
+     * flujo de moderación (estado nulo) se consideran aprobados, para no
+     * ocultar retroactivamente contenido ya publicado.
+     *
+     * @param c comentario a evaluar
+     * @return {@code true} si el comentario debe mostrarse públicamente
      */
     static boolean esComentarioPublico(Comentario c) {
         return c.getEstado() == null || c.getEstado() == com.controlf.db.schema.enums.EstadoModeracion.APROBADO;
     }
 
+    /**
+     * @param ley ley en la que se busca el voto
+     * @param p político cuyo voto se busca
+     * @return el nombre del tipo de voto emitido por el político en esa ley, o {@code "N/A"} si no votó
+     */
     private String findVotoForPolitico(com.controlf.db.schema.Ley ley, Politico p) {
         return ley.getVotos().stream()
                 .filter(v -> v.getPolitico().getId().equals(p.getId()))
@@ -202,6 +229,11 @@ public class PoliticoService {
                 .orElse("N/A");
     }
 
+    /**
+     * @return los valores distintos (partidos, regiones, comisiones)
+     *         disponibles para filtrar políticos, o listas vacías si la
+     *         consulta falla
+     */
     public com.controlf.dto.FiltrosPoliticoDTO getFiltros() {
         try {
             return com.controlf.dto.FiltrosPoliticoDTO.builder()
@@ -218,12 +250,29 @@ public class PoliticoService {
         }
     }
 
+    /**
+     * @return todos los políticos como candidatos disponibles para importar/vincular
+     */
     public List<com.controlf.dto.SimpleItemDTO> getPoliticosImportables() {
         return politicoRepository.findAll().stream()
                 .map(PoliticoService::mapToSimpleItemDTO)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Busca políticos paginados, aplicando de forma acumulativa los
+     * filtros de nombre, partido, región y comisión que se hayan
+     * indicado. Ante cualquier error de consulta devuelve una página
+     * vacía en lugar de propagar la excepción.
+     *
+     * @param pagina número de página (base 1)
+     * @param size cantidad de resultados por página
+     * @param nombre filtro opcional por nombre (coincidencia parcial)
+     * @param partido filtro opcional por partido exacto
+     * @param region filtro opcional por región exacta
+     * @param comision filtro opcional por comisión exacta
+     * @return la página de políticos resultante, representados como cartas
+     */
 public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int size, String nombre, String partido, String region, String comision) {
     try {
         org.springframework.data.jpa.domain.Specification<Politico> spec = (root, query, cb) -> cb.conjunction();
@@ -281,6 +330,9 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
                 .build();
     }
 }
+  /**
+   * @return todos los políticos como cartas, sin paginar, ordenados por identificador descendente
+   */
   public List<CartaPoliticoDTO> getAllPoliticosAsCartas() {
     return politicoRepository.findAll(
             org.springframework.data.domain.Sort.by(
@@ -292,6 +344,17 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
      .collect(Collectors.toList());
 }
 
+    /**
+     * Actualiza un campo puntual del perfil de un político (patrimonio o
+     * antecedentes) y registra el cambio en el historial de
+     * actualizaciones del político.
+     *
+     * @param politicoId identificador del político
+     * @param request campo a modificar y su nuevo valor
+     * @throws java.util.NoSuchElementException si el político no existe
+     * @throws IllegalArgumentException si el campo no es soportado
+     * @throws NumberFormatException si el campo es {@code "patrimonio"} y el valor no es numérico
+     */
     @Transactional
     public void actualizarCampoPolitico(Integer politicoId, ActualizarCampoPoliticoRequestDTO request) {
         Politico p = politicoRepository.findById(politicoId).orElseThrow();
@@ -316,6 +379,14 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         politicoRepository.save(p);
     }
 
+    /**
+     * Publica un comentario ciudadano sobre un político.
+     *
+     * @param politicoId identificador del político
+     * @param request texto y puntaje del comentario
+     * @param currentUserId identificador del usuario autor
+     * @throws java.util.NoSuchElementException si el político o el usuario no existen
+     */
     public void addComentario(Integer politicoId, ComentarioRequestDTO request, Integer currentUserId) {
         Politico p = politicoRepository.findById(politicoId).orElseThrow();
         Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
@@ -332,6 +403,14 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         politicoRepository.save(p);
     }
 
+    /**
+     * Registra la calificación de un usuario sobre un político.
+     *
+     * @param politicoId identificador del político
+     * @param request valor de la calificación
+     * @param currentUserId identificador del usuario autor
+     * @throws java.util.NoSuchElementException si el político o el usuario no existen
+     */
     public void addCalificacion(Integer politicoId, CalificacionRequestDTO request, Integer currentUserId) {
         Politico p = politicoRepository.findById(politicoId).orElseThrow();
         Usuario u = usuarioRepository.findById(currentUserId).orElseThrow();
@@ -346,6 +425,14 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         politicoRepository.save(p);
     }
 
+    /**
+     * Registra una nueva promesa de campaña para un político.
+     *
+     * @param politicoId identificador del político
+     * @param request datos de la promesa
+     * @return la promesa creada
+     * @throws ResponseStatusException 404 si el político no existe
+     */
     @Transactional
     public PromesaDTO crearPromesa(Integer politicoId, PromesaRequestDTO request) {
         Politico politico = politicoRepository.findById(politicoId)
@@ -367,6 +454,11 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         return mapToPromesaDTO(saved);
     }
 
+    /**
+     * @param politicoId identificador del político
+     * @return las promesas de campaña registradas para ese político
+     * @throws ResponseStatusException 404 si el político no existe
+     */
     public List<PromesaDTO> listarPromesasPorPolitico(Integer politicoId) {
         if (!politicoRepository.existsById(politicoId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Político no encontrado");
@@ -376,6 +468,10 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @param promesa entidad a convertir
+     * @return el DTO correspondiente a la promesa
+     */
     private PromesaDTO mapToPromesaDTO(Promesa promesa) {
         return PromesaDTO.builder()
                 .id(promesa.getId())
@@ -386,6 +482,15 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
                 .build();
     }
 
+    /**
+     * Construye la vista resumida (carta) de un político para los
+     * listados. La coherencia y el conteo de proyectos no se calculan
+     * aquí por costo de consulta en listados grandes; se muestran como
+     * "sin datos" y se completan en el perfil detallado.
+     *
+     * @param p entidad a convertir
+     * @return la carta resumida del político
+     */
     private static CartaPoliticoDTO mapToCartaDTO(Politico p) {
         Double coherencia = null;
         long proyectos = 0L;
@@ -401,6 +506,10 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
                 .build();
     }
 
+    /**
+     * @param p entidad a convertir
+     * @return el ítem simple (id, etiqueta) correspondiente al político
+     */
     private static com.controlf.dto.SimpleItemDTO mapToSimpleItemDTO(Politico p) {
         return com.controlf.dto.SimpleItemDTO.builder()
                 .id(p.getId().toString())
@@ -408,6 +517,17 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
                 .build();
     }
 
+    /**
+     * Agrega una entrada al historial de cambios de perfil, serializado
+     * como JSON en el propio registro del político.
+     *
+     * @param currentJson historial actual serializado; puede ser {@code null} o inválido
+     * @param campo nombre del campo modificado
+     * @param valorAnterior valor previo del campo
+     * @param valorNuevo valor nuevo del campo
+     * @return el historial actualizado serializado como JSON, o el valor
+     *         original si la serialización falla
+     */
     private String appendHistorialEntry(String currentJson, String campo, String valorAnterior, String valorNuevo) {
         List<Map<String, Object>> entries = new ArrayList<>();
         if (currentJson != null && !currentJson.isBlank()) {
@@ -432,9 +552,17 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         }
     }
 
+    /**
+     * Clasifica el nivel de coherencia de un político según los umbrales
+     * configurables en {@code Configuracion} ({@code UMBRAL_COHERENCIA_ALTA}
+     * y {@code UMBRAL_COHERENCIA_MEDIA}).
+     *
+     * @param coherencia porcentaje de coherencia promedio; puede ser {@code null}
+     * @return {@code "SIN DATOS"}, {@code "COHERENTE"}, {@code "AMBIGUO"} o {@code "INCOHERENTE"}
+     */
     private String determineEstadoEtiqueta(Double coherencia) {
         if (coherencia == null) return "SIN DATOS";
-        
+
         double alta = getThreshold("UMBRAL_COHERENCIA_ALTA", 70.0);
         double media = getThreshold("UMBRAL_COHERENCIA_MEDIA", 40.0);
 
@@ -444,8 +572,12 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
     }
 
     /**
-     * Convierte el JSON persistido de historialActualizaciones en una lista ordenada de cambios
-     * (más recientes primero) para exponerlos en el perfil (CF-005).
+     * Convierte el JSON persistido de {@code historialActualizaciones} en
+     * una lista ordenada de cambios (más recientes primero) para
+     * exponerlos en el perfil del político.
+     *
+     * @param json historial serializado; puede ser {@code null}, vacío o inválido
+     * @return los cambios ordenados de más reciente a más antiguo, o una lista vacía si no hay historial o es inválido
      */
     private List<com.controlf.dto.HistorialCambioPerfilDTO> parseHistorialCambios(String json) {
         if (json == null || json.isBlank()) {
@@ -462,17 +594,26 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
                         .fecha(asText(entry.get("fecha")))
                         .build());
             }
-            java.util.Collections.reverse(cambios); // más recientes primero
+            java.util.Collections.reverse(cambios);
             return cambios;
         } catch (Exception e) {
             return List.of();
         }
     }
 
+    /**
+     * @param value valor a convertir; puede ser {@code null}
+     * @return la representación en texto del valor, o {@code null} si el valor es {@code null}
+     */
     private String asText(Object value) {
         return value == null ? null : value.toString();
     }
 
+    /**
+     * @param reputacion puntaje promedio de calificaciones (escala 1-5); puede ser {@code null}
+     * @param totalCalificaciones cantidad de calificaciones recibidas
+     * @return una etiqueta legible del nivel de reputación
+     */
     private String determineEtiquetaReputacion(Double reputacion, long totalCalificaciones) {
         if (reputacion == null || totalCalificaciones == 0) return "SIN CALIFICACIONES";
         if (reputacion >= 4.0) return "MUY BUENA";
@@ -481,6 +622,11 @@ public com.controlf.dto.GrillaPoliticosDTO getPoliticosFiltrados(int pagina, int
         return "DEFICIENTE";
     }
 
+    /**
+     * @param clave nombre de la clave de configuración
+     * @param defaultValue valor a usar si la clave no está configurada
+     * @return el valor configurado como {@code double}, o {@code defaultValue} si no existe
+     */
     private double getThreshold(String clave, double defaultValue) {
         return configuracionRepository.findById(clave)
                 .map(c -> Double.parseDouble(c.getValor()))

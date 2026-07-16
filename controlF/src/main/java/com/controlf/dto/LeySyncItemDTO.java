@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Ley candidata a sincronización con la fuente externa.
+ */
 @Data
 @Builder
 @NoArgsConstructor

@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Debate ciudadano de una ley: puntuación promedio y comentarios públicos.
+ */
 @Data
 @Builder
 @NoArgsConstructor

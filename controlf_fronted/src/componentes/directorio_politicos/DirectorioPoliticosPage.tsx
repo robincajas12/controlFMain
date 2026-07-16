@@ -3,6 +3,11 @@ import BarraBusqueda from './Componente busqueda politico/BarraBusqueda';
 import GrillaPoliticos from './Componente resumen politico/GrillaPoliticos';
 import Paginacion from './Componente pie pagina/Paginacion';
 
+/**
+ * Página del directorio de políticos: compone la barra de búsqueda/filtros,
+ * la grilla paginada de tarjetas y el pie de paginación, sincronizando su
+ * estado con `/api/politicos` y `/api/politicos/filtros`.
+ */
 const DirectorioPoliticosPage: React.FC = () => {
   const [politicos, setPoliticos] = useState([]);
   const [paginaActual, setPaginaActual] = useState(1);
@@ -75,7 +80,6 @@ const DirectorioPoliticosPage: React.FC = () => {
 
   const handleSearchSubmit = () => {
     // Aquí se implementaría la búsqueda real enviando los filtros a la API
-    console.log("Buscando:", busqueda, filtros);
     setPaginaActual(1);
     fetchPoliticos(1);
   };

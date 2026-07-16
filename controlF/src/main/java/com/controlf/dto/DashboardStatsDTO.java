@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Estadísticas generales del dashboard público.
+ */
 @Data
 @Builder
 @NoArgsConstructor

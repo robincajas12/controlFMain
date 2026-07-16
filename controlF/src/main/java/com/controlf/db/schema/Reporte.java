@@ -6,6 +6,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+/**
+ * Reporte de un usuario hacia otro (moderación de la comunidad),
+ * pendiente de revisión por el equipo administrativo.
+ */
 @Entity
 @Table(name = "reportes")
 @Data
@@ -34,6 +38,9 @@ public class Reporte {
     @JoinColumn(name = "reportero_id")
     private Usuario reportero;
 
+    /**
+     * Estado del ciclo de vida de un reporte de usuario.
+     */
     public enum EstadoReporte {
         PENDIENTE,
         REVISADO,

@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Sección del panel de control de seguridad y usuarios, con sus opciones disponibles.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -14,6 +17,9 @@ public class PanelControlDTO {
     private String tituloSeccion;
     private List<OpcionPanelDTO> opciones;
 
+    /**
+     * Opción individual dentro de una sección del panel de control.
+     */
     @Data
     @Builder
     @NoArgsConstructor

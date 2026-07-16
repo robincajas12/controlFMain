@@ -1,6 +1,10 @@
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 
+/**
+ * Layout base de la aplicación: encabezado fijo, contenido de la ruta
+ * activa (`Outlet`) y pie de página.
+ */
 const MainLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-bg-dashboard">

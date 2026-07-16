@@ -5,6 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Par clave-valor de configuración del sistema (p. ej. los umbrales de
+ * coherencia usados por {@code PoliticoService}).
+ */
 @Entity
 @Table(name = "configuracion_sistema")
 @Data

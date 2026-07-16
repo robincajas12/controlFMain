@@ -6,6 +6,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.util.List;
 
+/**
+ * Página de políticos para el listado paginado.
+ */
 @Data
 @Builder
 @NoArgsConstructor

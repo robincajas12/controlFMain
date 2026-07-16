@@ -1,3 +1,6 @@
+/**
+ * Estado de paginación mostrado en el pie de página de una grilla.
+ */
 export interface Paginacion {
   id: string;            // Identificador único del componente
   paginaActual: number;  // Página actual

@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * Solicitud para registrar manualmente un nuevo político.
+ */
 @Data
 @Builder
 @NoArgsConstructor

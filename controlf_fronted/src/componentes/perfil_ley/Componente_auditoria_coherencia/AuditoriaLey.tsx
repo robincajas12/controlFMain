@@ -11,7 +11,13 @@ interface AuditoriaLeyProps {
   }[];
 }
 
+/**
+ * Tabla de auditoría de coherencia de una ley: por cada político vinculado
+ * a través de una promesa de campaña, muestra su voto en esta ley y el
+ * análisis de coherencia entre ambos.
+ */
 const AuditoriaLey: React.FC<AuditoriaLeyProps> = ({ filas }) => {
+  /** @returns las clases de color según el nivel de coherencia ('cumple'/'coherente' vs 'incumple'/'incoherente', y ambar para el resto). */
   const getStatusColor = (nivel: string) => {
     switch (nivel.toLowerCase()) {
       case 'cumple':

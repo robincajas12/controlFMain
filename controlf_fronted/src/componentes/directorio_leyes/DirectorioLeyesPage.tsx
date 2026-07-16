@@ -3,6 +3,11 @@ import BarraBusquedaLeyes from './BarraBusquedaLeyes';
 import ListaLeyes from './ListaLeyes';
 import Paginacion from '../directorio_politicos/Componente pie pagina/Paginacion';
 
+/**
+ * Página del directorio de leyes: combina búsqueda, filtros dinámicos
+ * (poblados desde `/api/leyes/filtros`), listado paginado y exportación a
+ * CSV del detalle de leyes.
+ */
 const DirectorioLeyesPage: React.FC = () => {
   const [leyes, setLeyes] = useState([]);
   const [paginaActual, setPaginaActual] = useState(1);
@@ -65,6 +70,7 @@ const DirectorioLeyesPage: React.FC = () => {
     fetchLeyes(1);
   };
 
+  /** Descarga el reporte CSV con el detalle de todas las leyes (CF-022). */
   const handleExportarLeyes = async () => {
     try {
       // Exportación detallada por ley (CF-022).

@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Votación tal como la expone la fuente de datos externa.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

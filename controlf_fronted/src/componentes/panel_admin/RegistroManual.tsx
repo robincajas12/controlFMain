@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 
+/** Campos del formulario de alta manual de un político. */
 interface PoliticoForm {
   nombreCompleto: string;
   partidoPolitico: string;
@@ -13,6 +14,7 @@ interface PoliticoForm {
   estaActivo: boolean;
 }
 
+/** Campos del formulario de alta manual de una propuesta de ley. */
 interface LeyForm {
   titulo: string;
   codigo: string;
@@ -38,6 +40,11 @@ const leyInicial: LeyForm = {
 
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-accent-blue focus:outline-none';
 
+/**
+ * Alta manual de políticos y propuestas de ley, como alternativa a los
+ * flujos de importación desde la fuente externa. Cada formulario se
+ * envía y valida de forma independiente.
+ */
 const RegistroManual: React.FC = () => {
   const { apiFetch } = useAuth();
   const [politico, setPolitico] = useState<PoliticoForm>(politicoInicial);
@@ -48,6 +55,7 @@ const RegistroManual: React.FC = () => {
   const [savingPolitico, setSavingPolitico] = useState(false);
   const [savingLey, setSavingLey] = useState(false);
 
+  // Reemplaza los estados por defecto con los realmente usados en el backend, si la consulta responde.
   useEffect(() => {
     fetch('/api/leyes/filtros')
       .then((res) => res.json())
@@ -55,6 +63,7 @@ const RegistroManual: React.FC = () => {
       .catch(() => { /* se usan los estados por defecto */ });
   }, []);
 
+  /** Valida y envía el alta de un nuevo político; reinicia el formulario si la petición tiene éxito. */
   const crearPolitico = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!politico.nombreCompleto.trim()) {
@@ -91,6 +100,12 @@ const RegistroManual: React.FC = () => {
     }
   };
 
+  /**
+   * Valida y envía el alta de una nueva propuesta de ley; reinicia el
+   * formulario si la petición tiene éxito. Un código de expediente
+   * duplicado (409) se muestra como error de validación, no como fallo
+   * genérico.
+   */
   const crearLey = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ley.titulo.trim() || !ley.codigo.trim()) {

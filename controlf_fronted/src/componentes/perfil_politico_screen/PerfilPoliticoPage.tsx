@@ -16,6 +16,11 @@ interface PromesaItem {
   politicoId: number;
 }
 
+/**
+ * Página de perfil de un político: datos generales, edición administrativa
+ * de campos puntuales, gestión de promesas de campaña, métricas de
+ * coherencia y reputación, y participación ciudadana.
+ */
 const PerfilPoliticoPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -32,6 +37,7 @@ const PerfilPoliticoPage: React.FC = () => {
   const [mensajePromesa, setMensajePromesa] = useState<string | null>(null);
   const { apiFetch, isAuthenticated, role } = useAuth();
 
+  /** Carga el perfil del político y su historial de cambios persistido en el backend. */
   const fetchPerfil = async () => {
     setIsLoading(true);
     try {
@@ -39,7 +45,6 @@ const PerfilPoliticoPage: React.FC = () => {
       if (!response.ok) throw new Error("Perfil no encontrado");
       const data = await response.json();
       setPerfil(data);
-      // Historial persistente de cambios (CF-005): se toma del backend, no solo de la sesión.
       const cambios = Array.isArray(data.historialCambios) ? data.historialCambios : [];
       setHistorialCambios(
         cambios.map((h: { campo: string; valorNuevo: string | null; fecha: string }) => ({
@@ -50,12 +55,13 @@ const PerfilPoliticoPage: React.FC = () => {
       );
     } catch (error) {
       console.error("Error al cargar el perfil:", error);
-      navigate('/'); // Volver al directorio si hay error
+      navigate('/');
     } finally {
       setIsLoading(false);
     }
   };
 
+  /** Carga las promesas de campaña registradas para este político. */
   const fetchPromesas = async () => {
     if (!id) return;
     try {
@@ -73,6 +79,7 @@ const PerfilPoliticoPage: React.FC = () => {
     fetchPromesas();
   }, [id]);
 
+  /** Publica un comentario y su calificación asociada, luego recarga el perfil. */
   const handleAddComentario = async (texto: string, puntaje: number) => {
     try {
       if (!isAuthenticated) return;
@@ -94,6 +101,7 @@ const PerfilPoliticoPage: React.FC = () => {
     }
   };
 
+  /** Registra una nueva promesa de campaña (solo administradores). */
   const handleCrearPromesa = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!id || !role || role !== 'ADMIN' || !nuevaPromesa.descripcion.trim() || !nuevaPromesa.categoria.trim()) return;
@@ -124,6 +132,7 @@ const PerfilPoliticoPage: React.FC = () => {
     }
   };
 
+  /** Actualiza el campo de patrimonio o antecedentes seleccionado (solo administradores). */
   const handleEditarPolitico = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!id || !valorEdicion.trim()) return;
@@ -142,7 +151,6 @@ const PerfilPoliticoPage: React.FC = () => {
 
       setValorEdicion('');
       setMensajeEdicion(`Cambio guardado en ${campoEdicion === 'patrimonio' ? 'patrimonio' : 'antecedentes'}.`);
-      // El historial persistente se recarga desde el backend (CF-005).
       await fetchPerfil();
     } catch (error) {
       console.error('Error al actualizar político:', error);

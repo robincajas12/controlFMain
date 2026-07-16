@@ -17,6 +17,10 @@ interface GrillaPoliticosProps {
   isLoading?: boolean;
 }
 
+/**
+ * Grilla de tarjetas de políticos, con esqueleto de carga y estado vacío
+ * cuando la búsqueda/filtros no arrojan resultados.
+ */
 const GrillaPoliticos: React.FC<GrillaPoliticosProps> = ({ cartas = [], isLoading }) => {
   if (isLoading) {
     return (

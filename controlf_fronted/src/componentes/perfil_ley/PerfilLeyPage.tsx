@@ -6,6 +6,13 @@ import ResultadoVotacion from './Componente_resultado_votacion/ResultadoVotacion
 import AuditoriaLey from './Componente_auditoria_coherencia/AuditoriaLey';
 import ParticipacionCiudadana from '../perfil_politico_screen/ParticipacionCiudadana';
 
+/**
+ * Página de perfil completo de una ley: agrega contenido, resultado de
+ * votación, auditoría de coherencia y debate ciudadano desde
+ * `/api/leyes/{id}/perfil`. Los administradores además pueden editar
+ * categoría, estado y asistencia de votos, generar la explicación
+ * simplificada con IA, y enlazar el detalle de votación externo.
+ */
 const PerfilLeyPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -40,6 +47,7 @@ const PerfilLeyPage: React.FC = () => {
     fetchPerfil();
   }, [id]);
 
+  /** Publica un comentario y su calificación asociada, y refresca el perfil. */
   const handleAddComentario = async (texto: string, puntaje: number) => {
     try {
       if (!isAuthenticated) return;
@@ -134,6 +142,7 @@ const PerfilLeyPage: React.FC = () => {
     }
   };
 
+  /** Importa y enlaza el detalle de votación externo con los votos locales de esta ley. */
   const handleLinkExternalVotes = async () => {
     if (!id) return;
     setIsLinkingVotes(true);
@@ -155,6 +164,7 @@ const PerfilLeyPage: React.FC = () => {
     }
   };
 
+  /** Solicita al backend generar (o recuperar) la explicación simplificada de la ley vía IA. */
   const handleExplicarLey = async () => {
     if (!id) return;
     setIsTraduciendo(true);

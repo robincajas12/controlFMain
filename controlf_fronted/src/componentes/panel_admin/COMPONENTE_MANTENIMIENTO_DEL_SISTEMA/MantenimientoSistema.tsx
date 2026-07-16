@@ -1,5 +1,6 @@
 import React from 'react';
 
+/** Snapshot del estado operativo del sistema mostrado en el panel de administración. */
 interface MantenimientoSistemaProps {
   info: {
     id: string;
@@ -14,6 +15,11 @@ interface MantenimientoSistemaProps {
   onAccion: (accion: string) => void;
 }
 
+/**
+ * Panel de solo lectura con el estado de la base de datos, el último
+ * respaldo y la carga del servidor, junto a una explicación en lenguaje
+ * simple para usuarios no técnicos.
+ */
 const MantenimientoSistema: React.FC<MantenimientoSistemaProps> = ({ info }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-8">
